@@ -25,8 +25,17 @@ app.use(express.urlencoded({extended:true}));
 app.set('trust proxy',1);
 
 // Serve o frontend (Dashboard Executivo)
-app.use(express.static('public'));
-app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'index.html')));
+const _path = require('path');
+app.use(express.static(_path.join(__dirname, 'public'), {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
+app.get('/', (req, res) => {
+  res.sendFile(_path.join(__dirname, 'public', 'index.html'));
+});
 
 app.use('/api/auth',   require('./routes/auth'));
 app.use('/api/upload', require('./routes/upload'));
