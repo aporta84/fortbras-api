@@ -1858,24 +1858,30 @@ async function saveNewUser(){
 }
 
 window.addEventListener('load', function(){
-  // 1. Verifica se backend está disponível
+  // Verifica backend disponível
   checkBackend().then(function(){
-    // 2. Se tem token salvo + backend ok, carrega dados automaticamente
     if(_backendOk && _jwtToken && _currentUser){
       window._viewUser = _currentUser.username;
       _applyLoginPermissions(_currentUser);
       _loadDashboardFromAPI();
-    } else {
-      // 3. Fallback local: sync localStorage → AUTH_USERS
-      const stored = initPermUsers();
-      if(stored && stored.length > 0){
-        AUTH_USERS.length = 0;
-        stored.forEach(u => AUTH_USERS.push({user: u.user, pwd: u.pwd}));
-      }
-      renderPermTable();
     }
   });
-});
+
+  // Carrega dados do Firebase após charts renderizarem
+  setTimeout(function(){
+    fbLoadData();
+  }, 1500);
+
+  // Sincroniza usuários
+  setTimeout(function(){
+    const stored = initPermUsers();
+    if(stored && stored.length > 0){
+      AUTH_USERS.length = 0;
+      stored.forEach(u => AUTH_USERS.push({user: u.user, pwd: u.pwd}));
+    }
+    renderPermTable();
+  }, 600);
+}));
 
 // ── Log de Acessos ──────────────────────────────────────────────────────────
 
