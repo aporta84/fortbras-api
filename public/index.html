@@ -1510,31 +1510,8 @@ function checkViewLogin(){
   const msg  = document.getElementById('view-msg');
   msg.textContent = '';
 
-  if(_backendOk){
-    // ── LOGIN VIA API ──────────────────────────────────────────────────────
-    msg.textContent = 'Autenticando...';
-    apiPost('/auth/login', {username:user, password:pass}, false).then(function(data){
-      if(data.error){
-        msg.textContent = 'Usuário ou senha incorretos.';
-        msg.className = 'err';
-        document.getElementById('view-pass').value = '';
-        document.getElementById('view-pass').focus();
-        return;
-      }
-      _jwtToken = data.token;
-      _currentUser = data.user;
-      localStorage.setItem('fortbras_jwt', _jwtToken);
-      localStorage.setItem('fortbras_user', JSON.stringify(_currentUser));
-      window._viewUser = user;
-      _applyLoginPermissions(data.user);
-      // Carrega dados do backend
-      _loadDashboardFromAPI();
-    }).catch(function(){
-      msg.textContent = 'Erro de conexão com o servidor.';
-      msg.className = 'err';
-    });
-  } else {
-    // ── LOGIN LOCAL (fallback sem backend) ─────────────────────────────────
+  // Sempre tenta login local primeiro (garante acesso mesmo sem backend)
+  function localLogin(){
     const permUsers = getPermUsers();
     if(permUsers && permUsers.length > 0){
       AUTH_USERS.length = 0;
@@ -1543,10 +1520,50 @@ function checkViewLogin(){
     const match = AUTH_USERS.find(u => u.user.toLowerCase()===user && u.pwd===pass);
     if(match){
       window._viewUser = user;
-      const isPriv = match.pwd !== undefined && ['aporta','admin'].includes(user);
-      _applyLoginPermissions({username:user, role: isPriv?'admin':'viewer', can_upload: isPriv, can_perm: isPriv});
-      if(isPriv){ initPermUsers(); renderPermTable(); }
-    } else {
+      const isAdmin = ['aporta','admin'].includes(user) || match.canUpload || match.canPerm;
+      _applyLoginPermissions({username:user, role:isAdmin?'admin':'viewer', can_upload:isAdmin, can_perm:isAdmin});
+      if(isAdmin){ initPermUsers(); renderPermTable(); }
+      // Tenta carregar Firebase em background
+      setTimeout(fbLoadData, 1000);
+      return true;
+    }
+    return false;
+  }
+
+  // Tenta backend se disponível
+  if(_backendOk){
+    msg.textContent = 'Autenticando...';
+    apiPost('/auth/login', {username:user, password:pass}, false).then(function(data){
+      if(data.error){
+        // Backend rejeitou — tenta local
+        if(!localLogin()){
+          msg.textContent = 'Usuário ou senha incorretos.';
+          msg.className = 'err';
+          document.getElementById('view-pass').value = '';
+          document.getElementById('view-pass').focus();
+        }
+        return;
+      }
+      _jwtToken = data.accessToken || data.token;
+      _currentUser = data.user;
+      localStorage.setItem('fortbras_jwt', _jwtToken);
+      localStorage.setItem('fortbras_user', JSON.stringify(_currentUser));
+      window._viewUser = user;
+      _applyLoginPermissions(data.user);
+      _loadDashboardFromAPI();
+      setTimeout(fbLoadData, 1000);
+    }).catch(function(){
+      // Backend falhou — usa login local
+      if(!localLogin()){
+        msg.textContent = 'Usuário ou senha incorretos.';
+        msg.className = 'err';
+        document.getElementById('view-pass').value = '';
+        document.getElementById('view-pass').focus();
+      }
+    });
+  } else {
+    // Sem backend — login local direto
+    if(!localLogin()){
       msg.textContent = 'Usuário ou senha incorretos.';
       msg.className = 'err';
       document.getElementById('view-pass').value = '';
