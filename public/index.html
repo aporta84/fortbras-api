@@ -1387,6 +1387,12 @@ function processFile(file){
       const wb=window.XLSX.read(e.target.result,{type:'array'});
       applyData(wb);
       lsSaveData(wb);
+      // Limpa Firebase antes de salvar para garantir sobrescrita total
+      if(window._fbReady && window._fbDb){
+        window._fbDb.ref('dashboard/dados').remove().then(function(){
+          console.log('Firebase limpo, salvando novos dados...');
+        }).catch(function(e){ console.warn('Firebase remove erro:', e); });
+      }
       // Salva no Firebase
       try{
         const fbObj={kpis:{},curvas:[],areas:[],avancos:[],riscos:[]};
