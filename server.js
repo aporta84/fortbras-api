@@ -14,7 +14,8 @@ const origins = (process.env.ALLOWED_ORIGINS||'').split(',').map(o=>o.trim()).fi
 origins.push('http://localhost:3000','http://127.0.0.1:5500','null');
 
 app.use(cors({ origin:(o,cb)=>{
-  if (!o || origins.includes(o)) return cb(null,true);
+  // Em produção aceita qualquer origem (frontend no Netlify)
+  if (!o || origins.includes(o) || origins.includes('*') || process.env.NODE_ENV==='production') return cb(null,true);
   cb(new Error('Origem nao permitida: '+o));
 }, credentials:true, methods:['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders:['Content-Type','Authorization'] }));
 
