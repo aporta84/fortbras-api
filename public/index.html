@@ -1671,40 +1671,29 @@ async function renderPermTable(){
   const tbody = document.getElementById('perm-tbody');
   if(!tbody) return;
 
-  if(_backendOk && _jwtToken){
-    // ── VIA API ────────────────────────────────────────────────────────────
+  // Tenta carregar usuários do Firebase primeiro
+  if(window._fbReady && window._fbDb){
     try{
-      const users = await apiGet('/users');
-      if(users.error){ throw new Error(users.error); }
-      const dot = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
-      const badge = (u) => u.role==='admin'
-        ? '<span class="badge-admin-u">Administrador</span>'
-        : '<span class="badge-viewer-u">Visualizador</span>';
-      tbody.innerHTML = users.map(u=>`
-        <tr>
-          <td><strong>${u.username}</strong></td>
-          <td>••••••</td>
-          <td>${badge(u)}</td>
-          <td class="perm-center">${dot(true)}</td>
-          <td class="perm-center">${dot(u.can_upload)}</td>
-          <td class="perm-center">${dot(u.can_logs)}</td>
-          <td class="perm-center">
-            <div style="display:flex;gap:5px;justify-content:center">
-              <button class="btn-edit-u" onclick="editUserAPI(${u.id},'${u.username}',${u.role==='admin'?1:0},${u.can_upload},${u.can_logs},${u.can_perm})">Editar</button>
-              <button class="btn-del-u" onclick="deleteUserAPI(${u.id},'${u.username}')">Remover</button>
-            </div>
-          </td>
-        </tr>`).join('');
-      return;
-    }catch(e){ console.warn('renderPermTable API error:', e); }
+      const snap = await window._fbDb.ref('dashboard/usuarios').once('value');
+      const val = snap.val();
+      if(val && val.payload){
+        const fbUsers = JSON.parse(val.payload);
+        if(fbUsers && fbUsers.length > 0){
+          // Atualiza localStorage com dados do Firebase
+          savePermUsers(fbUsers);
+          AUTH_USERS.length = 0;
+          fbUsers.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
+        }
+      }
+    }catch(e){ console.warn('Firebase users load erro:', e); }
   }
 
-  // ── FALLBACK LOCAL ─────────────────────────────────────────────────────────
   const users = initPermUsers();
-  const dot = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
+  const dot   = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
   const badge = (u) => u.canUpload
     ? '<span class="badge-admin-u">Administrador</span>'
     : '<span class="badge-viewer-u">Visualizador</span>';
+
   tbody.innerHTML = users.map((u,i)=>`
     <tr>
       <td><strong>${u.user}</strong></td>
@@ -1748,24 +1737,25 @@ async function deleteUserAPI(id, username){
 
 async function deleteUser(i){
   const users = initPermUsers();
-  if(!users[i]){ return; }
+  if(!users[i]) return;
   if(users[i].user === window._viewUser){ alert('Não é possível remover o usuário logado.'); return; }
   if(!confirm('Remover usuário '+users[i].user+'?')) return;
 
-  // Tenta via API
-  if(_jwtToken && users[i].apiId){
+  users.splice(i,1);
+  AUTH_USERS.length = 0;
+  users.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
+  savePermUsers(users);
+
+  // Remove do Firebase também
+  if(window._fbReady && window._fbDb){
     try{
-      await apiDelete('/users/'+users[i].apiId);
-      await renderPermTable();
-      return;
-    }catch(e){ console.warn('API delete falhou:', e); }
+      await window._fbDb.ref('dashboard/usuarios').set({
+        payload: JSON.stringify(users),
+        updated_at: new Date().toISOString()
+      });
+    }catch(e){ console.warn('Firebase delete erro:', e); }
   }
 
-  // Fallback local
-  users.splice(i,1);
-  AUTH_USERS.length=0;
-  users.forEach(u=>AUTH_USERS.push({user:u.user,pwd:u.pwd}));
-  savePermUsers(users);
   renderPermTable();
 }
 
@@ -1814,61 +1804,52 @@ function syncNewPerms(v){
 }
 
 async function saveNewUser(){
-  const user     = document.getElementById('nu-user').value.trim().toLowerCase();
-  const pass     = document.getElementById('nu-pass').value.trim();
+  const user      = document.getElementById('nu-user').value.trim().toLowerCase();
+  const pass      = document.getElementById('nu-pass').value.trim();
   const canUpload = document.getElementById('nu-upload').checked;
   const canLogs   = document.getElementById('nu-logs').checked;
   const canPerm   = document.getElementById('nu-perm').checked;
-  const role      = canUpload && canPerm ? 'admin' : 'viewer';
   const f         = document.getElementById('new-user-form');
-  const editApiId = f.dataset.editApiId ? parseInt(f.dataset.editApiId) : null;
   const editIdx   = f.dataset.editIndex !== undefined ? parseInt(f.dataset.editIndex) : -1;
 
   if(!user){ alert('Digite um nome de usuário.'); return; }
 
-  // ── VIA BACKEND (se disponível) ──────────────────────────────────────────
-  if(_jwtToken){
-    try{
-      let res;
-      if(editApiId){
-        const body = {role, can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0};
-        if(pass) body.password = pass;
-        res = await apiPut('/users/'+editApiId, body);
-      } else {
-        if(!pass){ alert('Digite uma senha.'); return; }
-        res = await apiPost('/users', {
-          username:user, password:pass, role,
-          can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0
-        });
-      }
-      if(res && res.error){ alert('Erro: '+res.error); return; }
-      alert(editApiId ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
-      await renderPermTable();
-      toggleNewUserForm();
-      return;
-    }catch(e){
-      console.warn('API users falhou, usando fallback local:', e);
-    }
-  }
-
-  // ── FALLBACK LOCAL ────────────────────────────────────────────────────────
+  // Carrega usuários atuais
   const users = initPermUsers();
+
   if(editIdx >= 0){
+    // Editar existente
     users[editIdx].user      = user;
     if(pass) users[editIdx].pwd = pass;
     users[editIdx].canUpload = canUpload;
     users[editIdx].canLogs   = canLogs;
     users[editIdx].canPerm   = canPerm;
   } else {
+    // Novo usuário
     if(users.find(u=>u.user===user)){ alert('Usuário já existe.'); return; }
     if(!pass){ alert('Digite uma senha.'); return; }
     users.push({user, pwd:pass, canUpload, canLogs, canPerm});
   }
+
+  // Salva no localStorage
   AUTH_USERS.length = 0;
   users.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
   savePermUsers(users);
+
+  // Salva no Firebase para sincronizar entre dispositivos
+  if(window._fbReady && window._fbDb){
+    try{
+      await window._fbDb.ref('dashboard/usuarios').set({
+        payload: JSON.stringify(users),
+        updated_at: new Date().toISOString()
+      });
+      console.log('✅ Usuários salvos no Firebase');
+    }catch(e){ console.warn('Firebase users save erro:', e); }
+  }
+
   renderPermTable();
   toggleNewUserForm();
+  alert(editIdx >= 0 ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
 }
 
 window.addEventListener('load', function(){
@@ -1876,6 +1857,26 @@ window.addEventListener('load', function(){
   setTimeout(function(){
     fbLoadData();
   }, 1500);
+
+  // Carrega usuários do Firebase
+  setTimeout(function(){
+    if(window._fbReady && window._fbDb){
+      window._fbDb.ref('dashboard/usuarios').once('value').then(function(snap){
+        const val = snap.val();
+        if(val && val.payload){
+          try{
+            const fbUsers = JSON.parse(val.payload);
+            if(fbUsers && fbUsers.length > 0){
+              savePermUsers(fbUsers);
+              AUTH_USERS.length = 0;
+              fbUsers.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
+              console.log('✅ Usuários carregados do Firebase:', fbUsers.length);
+            }
+          }catch(e){ console.warn('Firebase usuarios parse erro:', e); }
+        }
+      }).catch(e => console.warn('Firebase usuarios load erro:', e));
+    }
+  }, 2000);
 
   // Sincroniza usuários
   setTimeout(function(){
