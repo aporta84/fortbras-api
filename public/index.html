@@ -1746,12 +1746,23 @@ async function deleteUserAPI(id, username){
   renderPermTable();
 }
 
-function deleteUser(i){
+async function deleteUser(i){
   const users = initPermUsers();
+  if(!users[i]){ return; }
   if(users[i].user === window._viewUser){ alert('Não é possível remover o usuário logado.'); return; }
   if(!confirm('Remover usuário '+users[i].user+'?')) return;
+
+  // Tenta via API
+  if(_jwtToken && users[i].apiId){
+    try{
+      await apiDelete('/users/'+users[i].apiId);
+      await renderPermTable();
+      return;
+    }catch(e){ console.warn('API delete falhou:', e); }
+  }
+
+  // Fallback local
   users.splice(i,1);
-  // Sync back to AUTH_USERS
   AUTH_USERS.length=0;
   users.forEach(u=>AUTH_USERS.push({user:u.user,pwd:u.pwd}));
   savePermUsers(users);
@@ -1803,41 +1814,47 @@ function syncNewPerms(v){
 }
 
 async function saveNewUser(){
-  const user = document.getElementById('nu-user').value.trim().toLowerCase();
-  const pass = document.getElementById('nu-pass').value.trim();
-  if(!user){ alert('Digite um nome de usuário.'); return; }
+  const user     = document.getElementById('nu-user').value.trim().toLowerCase();
+  const pass     = document.getElementById('nu-pass').value.trim();
   const canUpload = document.getElementById('nu-upload').checked;
   const canLogs   = document.getElementById('nu-logs').checked;
   const canPerm   = document.getElementById('nu-perm').checked;
-  const role = canUpload && canPerm ? 'admin' : 'viewer';
-  const f = document.getElementById('new-user-form');
+  const role      = canUpload && canPerm ? 'admin' : 'viewer';
+  const f         = document.getElementById('new-user-form');
   const editApiId = f.dataset.editApiId ? parseInt(f.dataset.editApiId) : null;
   const editIdx   = f.dataset.editIndex !== undefined ? parseInt(f.dataset.editIndex) : -1;
 
-  if(_backendOk && _jwtToken){
-    // ── VIA API ────────────────────────────────────────────────────────────
-    let res;
-    if(editApiId){
-      // Editar
-      const body = {role, can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0};
-      if(pass) body.password = pass;
-      res = await apiPut('/users/'+editApiId, body);
-    } else {
-      // Criar
-      if(!pass){ alert('Digite uma senha.'); return; }
-      res = await apiPost('/users', {username:user, password:pass, role, can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0});
+  if(!user){ alert('Digite um nome de usuário.'); return; }
+
+  // ── VIA BACKEND (se disponível) ──────────────────────────────────────────
+  if(_jwtToken){
+    try{
+      let res;
+      if(editApiId){
+        const body = {role, can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0};
+        if(pass) body.password = pass;
+        res = await apiPut('/users/'+editApiId, body);
+      } else {
+        if(!pass){ alert('Digite uma senha.'); return; }
+        res = await apiPost('/users', {
+          username:user, password:pass, role,
+          can_upload:canUpload?1:0, can_logs:canLogs?1:0, can_perm:canPerm?1:0
+        });
+      }
+      if(res && res.error){ alert('Erro: '+res.error); return; }
+      alert(editApiId ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
+      await renderPermTable();
+      toggleNewUserForm();
+      return;
+    }catch(e){
+      console.warn('API users falhou, usando fallback local:', e);
     }
-    if(res.error){ alert('Erro: '+res.error); return; }
-    alert(editApiId ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
-    renderPermTable();
-    toggleNewUserForm();
-    return;
   }
 
-  // ── FALLBACK LOCAL ─────────────────────────────────────────────────────────
+  // ── FALLBACK LOCAL ────────────────────────────────────────────────────────
   const users = initPermUsers();
   if(editIdx >= 0){
-    users[editIdx].user = user;
+    users[editIdx].user      = user;
     if(pass) users[editIdx].pwd = pass;
     users[editIdx].canUpload = canUpload;
     users[editIdx].canLogs   = canLogs;
@@ -1845,10 +1862,10 @@ async function saveNewUser(){
   } else {
     if(users.find(u=>u.user===user)){ alert('Usuário já existe.'); return; }
     if(!pass){ alert('Digite uma senha.'); return; }
-    users.push({user,pwd:pass,canUpload,canLogs,canPerm});
+    users.push({user, pwd:pass, canUpload, canLogs, canPerm});
   }
-  AUTH_USERS.length=0;
-  users.forEach(u=>AUTH_USERS.push({user:u.user,pwd:u.pwd}));
+  AUTH_USERS.length = 0;
+  users.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
   savePermUsers(users);
   renderPermTable();
   toggleNewUserForm();
