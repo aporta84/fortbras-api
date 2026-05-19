@@ -1510,27 +1510,33 @@ function checkViewLogin(){
   const msg  = document.getElementById('view-msg');
   msg.textContent = '';
 
-  // Sincroniza usuários do localStorage antes de checar
-  const permUsers = getPermUsers();
-  if(permUsers && permUsers.length > 0){
-    AUTH_USERS.length = 0;
-    permUsers.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
-  }
+  // 1. Verifica usuários hardcoded (sempre funciona)
+  const HARDCODED = [
+    {user:'aporta',             pwd:'123456'},
+    {user:'admin',              pwd:'admin'},
+    {user:'fortbras',           pwd:'fortbras'},
+    {user:'lucimario.campos',   pwd:'lucimario123'},
+    {user:'rogerio.tambellini', pwd:'tambellini123'},
+    {user:'jorge.cavalcanti',   pwd:'jorge123'}
+  ];
+  let match = HARDCODED.find(u => u.user===user && u.pwd===pass);
 
-  const match = AUTH_USERS.find(u => u.user.toLowerCase()===user && u.pwd===pass);
+  // 2. Se não achou, verifica usuários criados no painel (localStorage)
+  if(!match){
+    try{
+      const stored = JSON.parse(localStorage.getItem('fortbras_perm_users')||'[]');
+      match = stored.find(u => u.user && u.user.toLowerCase()===user && u.pwd===pass);
+    }catch(e){}
+  }
 
   if(match){
     window._viewUser = user;
     const isAdmin = ['aporta','admin'].includes(user);
     _applyLoginPermissions({
-      username: user,
-      role: isAdmin ? 'admin' : 'viewer',
-      can_upload: isAdmin,
-      can_perm: isAdmin,
-      can_logs: true
+      username:user, role:isAdmin?'admin':'viewer',
+      can_upload:isAdmin, can_perm:isAdmin, can_logs:true
     });
     if(isAdmin){ initPermUsers(); renderPermTable(); }
-    // Carrega dados do Firebase em background
     setTimeout(fbLoadData, 800);
   } else {
     msg.textContent = 'Usuário ou senha incorretos.';
@@ -1908,7 +1914,7 @@ window.addEventListener('beforeprint', function(){
 
 // ── Persistência via localStorage (F5 safe) ──────────────────────────────────
 // Versão dos dados — incrementar força limpeza do cache antigo
-const LS_DATA_VERSION = '2025-05-19-v5';
+const LS_DATA_VERSION = '2025-05-19-v6';
 (function(){
   const savedVer = localStorage.getItem('fortbras_data_version');
   if(savedVer !== LS_DATA_VERSION){
