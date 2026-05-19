@@ -1858,6 +1858,16 @@ window.addEventListener('load', function(){
     fbLoadData();
   }, 1500);
 
+  // Garante Meta S14 após qualquer carga de dados
+  setTimeout(function(){
+    const ks3 = document.getElementById('ks3');
+    if(ks3 && weekLabels && weekLabels.length > 0){
+      ks3.textContent = 'Meta ' + weekLabels[weekLabels.length-1];
+    } else if(ks3 && (ks3.textContent === 'Meta S13' || !ks3.textContent.includes('S14'))){
+      ks3.textContent = 'Meta S14';
+    }
+  }, 3000);
+
   // Carrega usuários do Firebase
   setTimeout(function(){
     if(window._fbReady && window._fbDb){
