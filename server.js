@@ -24,6 +24,10 @@ app.use(express.json({limit:'5mb'}));
 app.use(express.urlencoded({extended:true}));
 app.set('trust proxy',1);
 
+// Serve o frontend (Dashboard Executivo)
+app.use(express.static('public'));
+app.get('/', (req, res) => res.sendFile(require('path').join(__dirname, 'public', 'index.html')));
+
 app.use('/api/auth',   require('./routes/auth'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/data',   require('./routes/data'));
