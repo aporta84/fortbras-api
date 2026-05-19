@@ -1,0 +1,103 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Render via API
+        run: |
+          echo "🚀 Iniciando deploy no Render..."
+          
+          # Busca owner ID
+          OWNER=$(curl -s \
+            -H "Authorization: Bearer rnd_rUIp3XzjycS1fn9kz17q7hwfQ3t0" \
+            -H "Accept: application/json" \
+            "https://api.render.com/v1/owners?limit=1")
+          
+          OWNER_ID=$(echo $OWNER | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0]['owner']['id'])")
+          echo "Owner ID: $OWNER_ID"
+          
+          # Verifica se serviço já existe
+          SERVICES=$(curl -s \
+            -H "Authorization: Bearer rnd_rUIp3XzjycS1fn9kz17q7hwfQ3t0" \
+            -H "Accept: application/json" \
+            "https://api.render.com/v1/services?limit=50")
+          
+          SERVICE_ID=$(echo $SERVICES | python3 -c "
+          import sys,json
+          svcs = json.load(sys.stdin)
+          found = next((s for s in svcs if s.get('service',{}).get('name')=='fortbras-api'), None)
+          print(found['service']['id'] if found else '')
+          " 2>/dev/null)
+          
+          if [ -n "$SERVICE_ID" ]; then
+            echo "✅ Serviço existe: $SERVICE_ID — fazendo redeploy..."
+            DEPLOY=$(curl -s -X POST \
+              -H "Authorization: Bearer rnd_rUIp3XzjycS1fn9kz17q7hwfQ3t0" \
+              -H "Content-Type: application/json" \
+              "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+              -d '{}')
+            echo "Deploy: $DEPLOY"
+          else
+            echo "Criando novo serviço..."
+            RESULT=$(curl -s -X POST \
+              -H "Authorization: Bearer rnd_rUIp3XzjycS1fn9kz17q7hwfQ3t0" \
+              -H "Content-Type: application/json" \
+              "https://api.render.com/v1/services" \
+              -d "{
+                \"type\": \"web_service\",
+                \"name\": \"fortbras-api\",
+                \"ownerId\": \"$OWNER_ID\",
+                \"repo\": \"https://github.com/aporta84/fortbras-api\",
+                \"branch\": \"main\",
+                \"autoDeploy\": \"yes\",
+                \"serviceDetails\": {
+                  \"env\": \"node\",
+                  \"buildCommand\": \"npm install\",
+                  \"startCommand\": \"node server.js\",
+                  \"plan\": \"free\",
+                  \"region\": \"oregon\",
+                  \"numInstances\": 1,
+                  \"envVars\": [
+                    {\"key\": \"JWT_SECRET\", \"value\": \"fortbras_2026_chave_secreta_producao\"},
+                    {\"key\": \"JWT_EXPIRES_IN\", \"value\": \"8h\"},
+                    {\"key\": \"DB_PATH\", \"value\": \"./data/fortbras.db\"},
+                    {\"key\": \"UPLOADS_DIR\", \"value\": \"./data/uploads\"},
+                    {\"key\": \"NODE_ENV\", \"value\": \"production\"}
+                  ]
+                }
+              }")
+            
+            SERVICE_ID=$(echo $RESULT | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('service',{}).get('id',''))" 2>/dev/null)
+            echo "Serviço criado: $SERVICE_ID"
+            echo "$RESULT" | python3 -m json.tool 2>/dev/null || echo "$RESULT"
+          fi
+          
+          # Aguarda e mostra URL
+          echo ""
+          echo "⏳ Aguardando deploy ficar live..."
+          for i in $(seq 1 18); do
+            sleep 20
+            STATUS=$(curl -s \
+              -H "Authorization: Bearer rnd_rUIp3XzjycS1fn9kz17q7hwfQ3t0" \
+              "https://api.render.com/v1/services/$SERVICE_ID")
+            
+            DEPLOY_STATUS=$(echo $STATUS | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('service',{}).get('serviceDetails',{}).get('deployStatus','...'))" 2>/dev/null)
+            SERVICE_URL=$(echo $STATUS | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('service',{}).get('serviceDetails',{}).get('url',''))" 2>/dev/null)
+            
+            echo "[$((i*20))s] Status: $DEPLOY_STATUS | URL: $SERVICE_URL"
+            
+            if [ "$DEPLOY_STATUS" = "live" ]; then
+              echo ""
+              echo "================================================"
+              echo "🎉 DEPLOY CONCLUÍDO!"
+              echo "URL: https://$SERVICE_URL"
+              echo "================================================"
+              break
+            fi
+          done
