@@ -1060,8 +1060,8 @@ function applyData(wb){
     setText('kv1', map['A Concluir']+'%');
     // Update donut legend text
     try{const legItems=document.querySelectorAll('.leg-item');
-    if(legItems[0]&&legItems[0].lastChild) legItems[0].lastChild.textContent='Realizado '+(map['Realizado']||0)+'%';
-    if(legItems[1]&&legItems[1].lastChild) legItems[1].lastChild.textContent='Concluir '+(map['A Concluir']||0)+'%';}catch(e){}
+    if(legItems[0]&&legItems[0].lastChild) legItems[0].lastChild.textContent='Realizado';
+    if(legItems[1]&&legItems[1].lastChild) legItems[1].lastChild.textContent='Concluir';}catch(e){}
     // Update Progresso Geral donut
     if(window._c1){
       const r=map['Realizado']||0, ac=map['A Concluir']||0, dv=map['Desvio']||0;
@@ -2037,8 +2037,8 @@ function lsLoadData(){
         const rv=m['Realizado']||0,cv=m['A Concluir']||(100-rv);
         window._c1.data.datasets[0].data=[rv,cv]; window._c1.update();
         try{const li=document.querySelectorAll('.leg-item');
-        if(li[0]&&li[0].lastChild) li[0].lastChild.textContent='Realizado '+rv+'%';
-        if(li[1]&&li[1].lastChild) li[1].lastChild.textContent='Concluir '+cv+'%';}catch(e){}
+        if(li[0]&&li[0].lastChild) li[0].lastChild.textContent='Realizado';
+        if(li[1]&&li[1].lastChild) li[1].lastChild.textContent='Concluir';}catch(e){}
       }
       if(window._c2){
         const plan=m['Planejado']||0,real=m['Realizado_Status']||m['Realizado']||0;
