@@ -1513,9 +1513,9 @@ function processFile(file){
         const _sa=rows(wb,'STATUS_AREAS');
         _sa.slice(2).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.areas.push({n:r[0],r:Number(r[1])||0,c:Number(r[2])||0,d:Number(r[3])||0}));
         const _av=rows(wb,'AVANCOS');
-        _av.slice(1).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.avancos.push(r));
+        _av.slice(2).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.avancos.push(r));
         const _ri=rows(wb,'RISCOS');
-        _ri.slice(1).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.riscos.push(r));
+        _ri.slice(2).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.riscos.push(r));
         fbSaveData(fbObj);
       }catch(fe){console.warn('Firebase save:',fe);}
       // Se backend disponível, envia também para API
@@ -2093,12 +2093,12 @@ function lsSaveData(wb){
     // Avanços
     const av=rows(wb,'AVANCOS');
     const avData=[];
-    for(let i=1;i<av.length;i++){ if(av[i][0]) avData.push(av[i]); }
+    for(let i=2;i<av.length;i++){ if(av[i][0]) avData.push(av[i]); }
     obj.avancos=avData;
     // Riscos
     const ri=rows(wb,'RISCOS');
     const riData=[];
-    for(let i=1;i<ri.length;i++){ if(ri[i][0]) riData.push(ri[i]); }
+    for(let i=2;i<ri.length;i++){ if(ri[i][0]) riData.push(ri[i]); }
     obj.riscos=riData;
     obj.saved_at=new Date().toISOString();
     localStorage.setItem('fortbras_dashboard_data', JSON.stringify(obj));
