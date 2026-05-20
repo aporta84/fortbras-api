@@ -384,6 +384,112 @@ table.tbl tr:hover td{background:var(--gray-light)}
   .badge-admin-u{background:#EFF6FF;color:#1D4ED8;padding:2px 8px;border-radius:99px;font-size:9.5px;font-weight:600}
   .badge-viewer-u{background:#F0FDF4;color:#166534;padding:2px 8px;border-radius:99px;font-size:9.5px;font-weight:600}
   .footer-update{display:none!important}
+
+/* ── Modal Painel de Área ─────────────────────────────────────────────────── */
+#apm-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.65);
+  z-index:9300;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#apm-overlay.open{display:flex}
+#apm-modal{background:#fff;border-radius:16px;width:1060px;max-width:97vw;
+  max-height:93vh;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.4);animation:apmPop .22s ease}
+@keyframes apmPop{from{transform:scale(.96) translateY(14px);opacity:0}to{transform:scale(1);opacity:1}}
+.apm-mh{background:#0F2244;padding:14px 22px;display:flex;align-items:center;gap:0;flex-shrink:0}
+.apm-mh-main{flex:1}
+.apm-mh-name{color:#fff;font-size:18px;font-weight:700;margin-bottom:2px}
+.apm-mh-sub{color:#93C5FD;font-size:11px}
+.apm-sems{display:flex;gap:20px;padding-left:22px;border-left:1px solid rgba(255,255,255,.15);margin-left:16px}
+.apm-sem-col{display:flex;flex-direction:column;align-items:center;gap:5px}
+.apm-sem-lbl{color:#93C5FD;font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.6px}
+.apm-sem-opts{display:flex;gap:5px}
+.apm-sopt{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  transition:all .2s;opacity:.4}
+.apm-sopt:hover{opacity:1;transform:scale(1.1)}
+.apm-sopt.active{opacity:1;border-color:#fff}
+.apm-sv{background:#22C55E}.apm-sa{background:#F59E0B}.apm-sr{background:#EF4444}
+.apm-close{background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;
+  border-radius:50%;font-size:16px;cursor:pointer;margin-left:18px;transition:background .2s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.apm-close:hover{background:rgba(255,255,255,.3)}
+.apm-kpi-bar{background:#F1F5F9;border-bottom:1px solid #E2E8F0;padding:10px 22px;
+  display:flex;align-items:center;gap:20px;flex-shrink:0}
+.apm-kpi-item{display:flex;flex-direction:column;align-items:center}
+.apm-kv{font-size:20px;font-weight:700;color:#0F2244;line-height:1}
+.apm-kv.pos{color:#1E9E5E}.apm-kv.neg{color:#DC2626}
+.apm-kl{font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.apm-kdiv{width:1px;height:34px;background:#CBD5E1}
+.apm-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;
+  font-size:11px;font-weight:600;margin-left:auto}
+.apm-src{font-size:10px;color:#94A3B8;display:flex;align-items:center;gap:5px;margin-left:8px}
+.apm-toolbar{background:#fff;border-bottom:1px solid #E2E8F0;padding:8px 22px;
+  display:flex;align-items:center;gap:10px;flex-shrink:0}
+.apm-tb-btn{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:8px;
+  border:1.5px solid #1E9E5E;background:#F0FDF4;font-size:12px;font-weight:600;
+  cursor:pointer;color:#166534;transition:all .2s}
+.apm-tb-btn:hover{background:#DCFCE7;border-color:#15803D}
+.apm-tb-note{font-size:11px;color:#64748B;margin-left:auto;display:flex;align-items:center;gap:5px}
+.apm-body{display:grid;grid-template-columns:1fr 1fr 1fr;flex:1;overflow:hidden;min-height:0}
+.apm-col{display:flex;flex-direction:column;border-right:1px solid #E2E8F0;overflow:hidden}
+.apm-col:last-child{border-right:none}
+.apm-col-hdr{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.7px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.apm-col-hdr.av{background:#F0FDF4;color:#166534;border-bottom:2px solid #86EFAC}
+.apm-col-hdr.pp{background:#EFF6FF;color:#1E40AF;border-bottom:2px solid #93C5FD}
+.apm-col-hdr.ri{background:#FFF7ED;color:#9A3412;border-bottom:2px solid #FCA5A5}
+.apm-col-cnt{margin-left:auto;background:rgba(0,0,0,.1);border-radius:10px;padding:1px 8px;font-size:10px}
+.apm-col-body{padding:12px 14px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px}
+.apm-item-row{display:flex;gap:8px;align-items:flex-start}
+.apm-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:10px}
+.apm-dg{background:#22C55E}.apm-db{background:#1D5BBF}.apm-dr{background:#EF4444}
+.apm-ta{flex:1;border:1.5px solid #E2E8F0;border-radius:7px;padding:8px 11px;
+  font-size:12.5px;font-family:inherit;resize:none;line-height:1.55;
+  color:#1E293B;transition:all .2s;background:#FAFBFF;overflow:hidden;min-height:40px}
+.apm-ta:hover{border-color:#93C5FD;background:#F0F6FF}
+.apm-ta:focus{outline:none;border-color:#1D5BBF;background:#fff;box-shadow:0 0 0 3px rgba(29,91,191,.1)}
+.apm-rm{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:13px;
+  padding:2px 4px;transition:color .2s;margin-top:7px;flex-shrink:0}
+.apm-rm:hover{color:#EF4444}
+.apm-add{border:1.5px dashed #CBD5E1;background:none;border-radius:8px;
+  padding:8px;font-size:11.5px;color:#94A3B8;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:2px}
+.apm-add:hover{border-color:#1D5BBF;color:#1D5BBF;background:#EFF6FF}
+.apm-footer{padding:12px 22px;border-top:1px solid #E2E8F0;background:#F8FAFC;
+  display:flex;align-items:center;gap:12px;flex-shrink:0}
+.apm-finfo{font-size:11px;color:#94A3B8}
+.apm-btn-cancel{background:#fff;color:#475569;border:1px solid #E2E8F0;padding:8px 18px;
+  border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.apm-btn-cancel:hover{background:#F1F5F9}
+.apm-btn-save{background:#1D5BBF;color:#fff;border:none;padding:8px 22px;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer;margin-left:auto;transition:background .2s;
+  display:flex;align-items:center;gap:7px}
+.apm-btn-save:hover{background:#0F2244}
+.apm-btn-save.ok{background:#1E9E5E}
+/* Import */
+#apm-imp-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:9400;align-items:center;justify-content:center}
+#apm-imp-overlay.open{display:flex}
+#apm-imp-box{background:#fff;border-radius:14px;width:500px;max-width:95vw;padding:28px;
+  box-shadow:0 16px 50px rgba(0,0,0,.3);animation:apmPop .2s ease}
+.apm-imp-zone{border:2px dashed #CBD5E1;border-radius:10px;padding:24px;text-align:center;
+  cursor:pointer;transition:all .2s;background:#F8FAFC}
+.apm-imp-zone:hover,.apm-imp-zone.drag{border-color:#1E9E5E;background:#F0FDF4}
+.apm-imp-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.apm-imp-lbl{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:5px}
+.apm-imp-sel{width:100%;border:1.5px solid #E2E8F0;border-radius:7px;padding:7px 10px;
+  font-size:12px;background:#fff;color:#1E293B;cursor:pointer}
+.apm-imp-sel:focus{outline:none;border-color:#1D5BBF}
+.apm-imp-status{font-size:12px;margin-top:10px;padding:8px 12px;border-radius:7px;display:none}
+.apm-imp-status.ok{background:#F0FDF4;color:#166534;display:block}
+.apm-imp-status.err{background:#FEF2F2;color:#991B1B;display:block}
+/* Card hint */
+.area-card{cursor:pointer!important;transition:all .2s}
+.area-card:hover{box-shadow:0 4px 16px rgba(29,91,191,.18)!important;
+  transform:translateY(-2px);border-color:#BFDBFE!important}
+.apm-card-hint{font-size:9px;color:#94A3B8;text-align:center;margin-top:4px;
+  opacity:0;transition:opacity .2s;font-style:italic}
+.area-card:hover .apm-card-hint{opacity:1}
+.apm-has-data::after{content:'●';position:absolute;top:4px;right:6px;
+  font-size:9px;color:#1D5BBF;pointer-events:none}
 </style>
 </head>
 <body>
@@ -740,7 +846,11 @@ function buildAreaCard(a, i){
     <div class="area-donut"><canvas id="ac${i}" role="img" aria-label="${a.n} ${a.r}%"></canvas>
     <div class="area-center" id="acp${i}">${a.r}%</div></div>
     <div class="area-pcts" id="acpcts${i}">${pcts}</div>
-    <div class="area-signal" id="acs${i}" title="${sig.label}" style="background:${sig.color}"></div>`;
+    <div class="area-signal" id="acs${i}" title="${sig.label}" style="background:${sig.color}"></div>
+    <div class="apm-card-hint">Clique para detalhar</div>`;
+  card.style.cursor='pointer';
+  card.title='Clique para abrir o painel detalhado';
+  (function(_i){ card.addEventListener('click', function(){ apmOpen(_i); }); })(i);
   grid.appendChild(card);
 }
 areas.forEach((a,i)=>{ buildAreaCard(a,i); });
@@ -2204,8 +2314,352 @@ function applyDataObj(obj){
     }
   }catch(e){console.error('applyDataObj erro:',e);}
 }
+
+// ── Painel de Área ────────────────────────────────────────────────────────────
+var _apmIdx = -1;
+var _apmImpData = [];
+var _apmContent = {};  // { [idx]: {sem:{tempo,escopo,equipe}, av:[], pp:[], ri:[]} }
+
+function _apmSig(r,d){
+  if(r===100) return {color:'#1D5BBF',label:'Concluído',bg:'#DBEAFE'};
+  if(r===0)   return {color:'#94A3B8',label:'Não iniciado',bg:'#F1F5F9'};
+  if(d>=0)    return {color:'#22C55E',label:'No prazo',bg:'#DCFCE7'};
+  if(d>=-4)   return {color:'#F59E0B',label:'Atenção',bg:'#FEF3C7'};
+  return        {color:'#EF4444',label:'Crítico',bg:'#FEE2E2'};
+}
+
+function apmOpen(idx){
+  if(!areaRows||!areaRows[idx]) return;
+  _apmIdx = idx;
+  var a = areaRows[idx];
+  var cv = Math.max(0,100-a.r);
+  var sig = _apmSig(a.r,a.d);
+
+  // Nome
+  document.getElementById('apm-name').textContent = a.n;
+
+  // KPIs do gráfico
+  document.getElementById('apm-real').textContent = a.r+'%';
+  document.getElementById('apm-plan').textContent = (a.r-a.d)+'%';
+  var dEl = document.getElementById('apm-desv');
+  dEl.textContent = (a.d>=0?'+':'')+a.d+'%';
+  dEl.className = 'apm-kv '+(a.d>0?'pos':a.d<0?'neg':'');
+  document.getElementById('apm-conc').textContent = cv+'%';
+  var badge = document.getElementById('apm-badge');
+  badge.textContent = sig.label;
+  badge.style.cssText = 'background:'+sig.bg+';color:'+sig.color+';display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-left:auto';
+
+  // Garante entrada no _apmContent
+  if(!_apmContent[idx]) _apmContent[idx] = {
+    sem:{tempo:'verde',escopo:'verde',equipe:'verde'}, av:[], pp:[], ri:[]
+  };
+  var c = _apmContent[idx];
+
+  // Semáforos
+  ['tempo','escopo','equipe'].forEach(function(k){
+    document.querySelectorAll('#apm-sem-'+k+' .apm-sopt').forEach(function(o){ o.classList.remove('active'); });
+    var t = document.querySelector('#apm-sem-'+k+' .apm-s'+c.sem[k].charAt(0));
+    if(t) t.classList.add('active');
+  });
+
+  // Colunas
+  apmRenderCol('apm-col-av', c.av, 'apm-dg', 'Descreva um avanço ou entrega concluída...', 'apm-cnt-av');
+  apmRenderCol('apm-col-pp', c.pp, 'apm-db', 'Descreva o próximo passo ou ação prioritária...', 'apm-cnt-pp');
+  apmRenderCol('apm-col-ri', c.ri, 'apm-dr', 'Descreva o ponto de atenção ou risco...', 'apm-cnt-ri');
+
+  var btn = document.getElementById('apm-btn-save');
+  btn.className='apm-btn-save'; btn.textContent='💾 Salvar Painel';
+  document.getElementById('apm-finfo').textContent='Dados salvos no Firebase · Sincronizados entre todos os dispositivos';
+  document.getElementById('apm-overlay').classList.add('open');
+}
+
+function apmRenderCol(colId, items, dotCls, ph, cntId){
+  var col = document.getElementById(colId);
+  col.innerHTML = '';
+  (items&&items.length?items:[]).forEach(function(txt){
+    var row=document.createElement('div'); row.className='apm-item-row';
+    var ta=document.createElement('textarea'); ta.className='apm-ta';
+    ta.value=txt; ta.placeholder=ph; ta.rows=2;
+    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
+    row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
+    row.appendChild(ta);
+    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+    rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
+    row.appendChild(rm);
+    col.appendChild(row);
+    setTimeout(function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; },10);
+  });
+  var addBtn=document.createElement('button'); addBtn.className='apm-add';
+  var lbls={'apm-col-av':'+ Adicionar avanço','apm-col-pp':'+ Adicionar próximo passo','apm-col-ri':'+ Adicionar risco'};
+  addBtn.textContent=lbls[colId]||'+ Adicionar';
+  addBtn.onclick=function(){
+    var row=document.createElement('div'); row.className='apm-item-row';
+    var ta=document.createElement('textarea'); ta.className='apm-ta';
+    ta.placeholder=ph; ta.rows=2;
+    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
+    row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
+    row.appendChild(ta);
+    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+    rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
+    row.appendChild(rm);
+    col.insertBefore(row,addBtn); ta.focus(); apmUpdateCnt(colId,cntId);
+  };
+  col.appendChild(addBtn);
+  apmUpdateCnt(colId,cntId);
+}
+
+function apmUpdateCnt(colId,cntId){
+  var n=document.getElementById(colId).querySelectorAll('.apm-ta').length;
+  var el=document.getElementById(cntId); if(el) el.textContent=n;
+}
+
+function apmSetSem(tipo,valor,el){
+  if(_apmIdx<0||!_apmContent[_apmIdx]) return;
+  _apmContent[_apmIdx].sem[tipo]=valor;
+  el.closest('.apm-sem-opts').querySelectorAll('.apm-sopt').forEach(function(o){ o.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function apmCollect(){
+  if(_apmIdx<0) return;
+  if(!_apmContent[_apmIdx]) _apmContent[_apmIdx]={sem:{tempo:'verde',escopo:'verde',equipe:'verde'},av:[],pp:[],ri:[]};
+  [['apm-col-av','av'],['apm-col-pp','pp'],['apm-col-ri','ri']].forEach(function(pair){
+    _apmContent[_apmIdx][pair[1]]=Array.from(document.getElementById(pair[0]).querySelectorAll('.apm-ta'))
+      .map(function(t){ return t.value.trim(); }).filter(Boolean);
+  });
+}
+
+async function apmSave(){
+  apmCollect();
+  var c = _apmContent[_apmIdx];
+
+  // Salva no Firebase
+  if(window._fbReady&&window._fbDb){
+    try{
+      await window._fbDb.ref('dashboard/paineis/'+_apmIdx).set({
+        payload: JSON.stringify(c),
+        updated_at: new Date().toISOString()
+      });
+      console.log('✅ Painel área '+_apmIdx+' salvo no Firebase');
+    }catch(e){ console.warn('Firebase painel save:', e); }
+  }
+
+  // Feedback
+  var btn=document.getElementById('apm-btn-save');
+  btn.className='apm-btn-save ok'; btn.textContent='✓ Salvo!';
+  document.getElementById('apm-finfo').textContent='✅ Salvo no Firebase · Visível para todos os usuários';
+
+  // Marca card com indicador visual
+  var cards=document.querySelectorAll('.area-card');
+  if(cards[_apmIdx]) cards[_apmIdx].classList.add('apm-has-data');
+
+  setTimeout(function(){ btn.className='apm-btn-save'; btn.textContent='💾 Salvar Painel'; },2500);
+}
+
+function apmClose(){
+  apmCollect();
+  document.getElementById('apm-overlay').classList.remove('open');
+  _apmIdx=-1;
+}
+
+// ── Import Excel ──────────────────────────────────────────────────────────────
+function apmOpenImport(){
+  _apmImpData=[];
+  document.getElementById('apm-imp-fname').textContent='Nenhum arquivo selecionado';
+  document.getElementById('apm-imp-map').style.display='none';
+  document.getElementById('apm-imp-ok').style.display='none';
+  document.getElementById('apm-imp-status').className='apm-imp-status';
+  document.getElementById('apm-imp-file').value='';
+  document.getElementById('apm-imp-overlay').classList.add('open');
+}
+function apmCloseImport(){ document.getElementById('apm-imp-overlay').classList.remove('open'); }
+function apmHandleDrop(e){ e.preventDefault(); document.getElementById('apm-imp-zone').classList.remove('drag'); apmHandleFile(e.dataTransfer.files[0]); }
+
+function apmHandleFile(file){
+  if(!file) return;
+  document.getElementById('apm-imp-fname').textContent='📄 '+file.name;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1}).filter(function(r){ return r.some(function(c){ return c; }); });
+      if(rows.length<2) throw new Error('Arquivo sem dados suficientes');
+      _apmImpData=rows;
+      var headers=rows[0].map(function(h,i){ return h||'Coluna '+(i+1); });
+      ['apm-sel-av','apm-sel-pp','apm-sel-ri'].forEach(function(id){
+        var sel=document.getElementById(id);
+        sel.innerHTML='<option value="">— selecione —</option>';
+        headers.forEach(function(h,i){
+          var opt=document.createElement('option'); opt.value=i; opt.textContent=h;
+          var hl=h.toLowerCase();
+          if(id==='apm-sel-av'&&(hl.includes('avan')||hl.includes('conclu')||hl.includes('entrega'))) opt.selected=true;
+          if(id==='apm-sel-pp'&&(hl.includes('prox')||hl.includes('passo')||hl.includes('ação')||hl.includes('acao'))) opt.selected=true;
+          if(id==='apm-sel-ri'&&(hl.includes('risco')||hl.includes('aten')||hl.includes('ponto'))) opt.selected=true;
+          sel.appendChild(opt);
+        });
+      });
+      document.getElementById('apm-imp-map').style.display='block';
+      document.getElementById('apm-imp-ok').style.display='inline-block';
+      document.getElementById('apm-imp-status').className='apm-imp-status ok';
+      document.getElementById('apm-imp-status').textContent='✅ '+(rows.length-1)+' linhas lidas · '+headers.length+' colunas encontradas';
+    }catch(err){
+      document.getElementById('apm-imp-status').className='apm-imp-status err';
+      document.getElementById('apm-imp-status').textContent='❌ Erro: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function apmApplyImport(){
+  if(!_apmImpData.length||_apmIdx<0) return;
+  var rows=_apmImpData.slice(1);
+  var iAv=document.getElementById('apm-sel-av').value;
+  var iPp=document.getElementById('apm-sel-pp').value;
+  var iRi=document.getElementById('apm-sel-ri').value;
+  function extract(col){ return col===''?[]:rows.map(function(r){ return String(r[col]||'').trim(); }).filter(Boolean); }
+  if(!_apmContent[_apmIdx]) _apmContent[_apmIdx]={sem:{tempo:'verde',escopo:'verde',equipe:'verde'},av:[],pp:[],ri:[]};
+  if(iAv!=='') _apmContent[_apmIdx].av=extract(iAv);
+  if(iPp!=='') _apmContent[_apmIdx].pp=extract(iPp);
+  if(iRi!=='') _apmContent[_apmIdx].ri=extract(iRi);
+  apmRenderCol('apm-col-av',_apmContent[_apmIdx].av,'apm-dg','Descreva um avanço ou entrega concluída...','apm-cnt-av');
+  apmRenderCol('apm-col-pp',_apmContent[_apmIdx].pp,'apm-db','Descreva o próximo passo ou ação prioritária...','apm-cnt-pp');
+  apmRenderCol('apm-col-ri',_apmContent[_apmIdx].ri,'apm-dr','Descreva o ponto de atenção ou risco...','apm-cnt-ri');
+  document.getElementById('apm-finfo').textContent='✅ '+rows.length+' linhas importadas do Excel';
+  apmCloseImport();
+}
+
+// Carrega painéis salvos do Firebase no window.load
+setTimeout(function(){
+  if(window._fbReady&&window._fbDb){
+    window._fbDb.ref('dashboard/paineis').once('value').then(function(snap){
+      var val=snap.val();
+      if(!val) return;
+      Object.keys(val).forEach(function(k){
+        try{
+          var parsed = typeof val[k].payload==='string'?JSON.parse(val[k].payload):val[k];
+          _apmContent[parseInt(k)] = parsed;
+          // Marca card com indicador
+          var cards=document.querySelectorAll('.area-card');
+          var idx=parseInt(k);
+          if(cards[idx]) cards[idx].classList.add('apm-has-data');
+        }catch(e){}
+      });
+      console.log('✅ Painéis de área carregados do Firebase');
+    }).catch(function(e){ console.warn('Firebase paineis load:', e); });
+  }
+}, 2500);
 </script>
 
 
+
+<!-- ── Modal Painel de Área ────────────────────────────────────────────────── -->
+<div id="apm-overlay" onclick="if(event.target===this)apmClose()">
+<div id="apm-modal">
+  <div class="apm-mh">
+    <div class="apm-mh-main">
+      <div class="apm-mh-name" id="apm-name">Área</div>
+      <div class="apm-mh-sub">Painel de Status Detalhado · Plano de Conversão Menil</div>
+    </div>
+    <div class="apm-sems">
+      <div class="apm-sem-col">
+        <div class="apm-sem-lbl">Tempo</div>
+        <div class="apm-sem-opts" id="apm-sem-tempo">
+          <div class="apm-sopt apm-sv" onclick="apmSetSem('tempo','verde',this)" title="No prazo"></div>
+          <div class="apm-sopt apm-sa" onclick="apmSetSem('tempo','amarelo',this)" title="Atenção"></div>
+          <div class="apm-sopt apm-sr" onclick="apmSetSem('tempo','vermelho',this)" title="Atrasado"></div>
+        </div>
+      </div>
+      <div class="apm-sem-col">
+        <div class="apm-sem-lbl">Escopo</div>
+        <div class="apm-sem-opts" id="apm-sem-escopo">
+          <div class="apm-sopt apm-sv" onclick="apmSetSem('escopo','verde',this)" title="OK"></div>
+          <div class="apm-sopt apm-sa" onclick="apmSetSem('escopo','amarelo',this)" title="Atenção"></div>
+          <div class="apm-sopt apm-sr" onclick="apmSetSem('escopo','vermelho',this)" title="Crítico"></div>
+        </div>
+      </div>
+      <div class="apm-sem-col">
+        <div class="apm-sem-lbl">Equipe</div>
+        <div class="apm-sem-opts" id="apm-sem-equipe">
+          <div class="apm-sopt apm-sv" onclick="apmSetSem('equipe','verde',this)" title="OK"></div>
+          <div class="apm-sopt apm-sa" onclick="apmSetSem('equipe','amarelo',this)" title="Atenção"></div>
+          <div class="apm-sopt apm-sr" onclick="apmSetSem('equipe','vermelho',this)" title="Crítico"></div>
+        </div>
+      </div>
+    </div>
+    <button class="apm-close" onclick="apmClose()">✕</button>
+  </div>
+  <div class="apm-kpi-bar">
+    <div class="apm-kpi-item"><div class="apm-kv" id="apm-real">–</div><div class="apm-kl">Realizado</div></div>
+    <div class="apm-kdiv"></div>
+    <div class="apm-kpi-item"><div class="apm-kv" id="apm-plan">–</div><div class="apm-kl">Planejado</div></div>
+    <div class="apm-kdiv"></div>
+    <div class="apm-kpi-item"><div class="apm-kv" id="apm-desv">–</div><div class="apm-kl">Desvio</div></div>
+    <div class="apm-kdiv"></div>
+    <div class="apm-kpi-item"><div class="apm-kv" id="apm-conc">–</div><div class="apm-kl">A Concluir</div></div>
+    <span class="apm-badge" id="apm-badge"></span>
+    <div class="apm-src">📊 Dados capturados do gráfico da área</div>
+  </div>
+  <div class="apm-toolbar">
+    <button class="apm-tb-btn" onclick="apmOpenImport()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      Importar do Excel (.xlsx)
+    </button>
+    <div class="apm-tb-note">✏️ Clique nos campos abaixo para editar diretamente</div>
+  </div>
+  <div class="apm-body">
+    <div class="apm-col">
+      <div class="apm-col-hdr av">✅ Avanços <span class="apm-col-cnt" id="apm-cnt-av">0</span></div>
+      <div class="apm-col-body" id="apm-col-av"></div>
+    </div>
+    <div class="apm-col">
+      <div class="apm-col-hdr pp">🎯 Próximos Passos <span class="apm-col-cnt" id="apm-cnt-pp">0</span></div>
+      <div class="apm-col-body" id="apm-col-pp"></div>
+    </div>
+    <div class="apm-col">
+      <div class="apm-col-hdr ri">⚠️ Pontos de Atenção e Riscos <span class="apm-col-cnt" id="apm-cnt-ri">0</span></div>
+      <div class="apm-col-body" id="apm-col-ri"></div>
+    </div>
+  </div>
+  <div class="apm-footer">
+    <div class="apm-finfo" id="apm-finfo">Dados salvos no Firebase · Sincronizados entre todos os dispositivos</div>
+    <button class="apm-btn-cancel" onclick="apmClose()">Fechar</button>
+    <button class="apm-btn-save" id="apm-btn-save" onclick="apmSave()">💾 Salvar Painel</button>
+  </div>
+</div>
+</div>
+<!-- Import Excel -->
+<div id="apm-imp-overlay" onclick="if(event.target===this)apmCloseImport()">
+<div id="apm-imp-box">
+  <div style="font-size:16px;font-weight:700;color:#0F2244;margin-bottom:6px">📊 Importar do Excel</div>
+  <div style="font-size:13px;color:#64748B;margin-bottom:16px">Selecione o arquivo e mapeie as colunas para cada seção</div>
+  <div class="apm-imp-zone" id="apm-imp-zone" onclick="document.getElementById('apm-imp-file').click()"
+    ondragover="this.classList.add('drag');event.preventDefault()"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="apmHandleDrop(event)">
+    <input type="file" id="apm-imp-file" accept=".xlsx,.xls" onchange="apmHandleFile(this.files[0])">
+    <div style="font-size:28px;margin-bottom:8px">📂</div>
+    <div style="font-size:13px;color:#64748B;font-weight:500">Arraste o arquivo Excel ou clique para selecionar</div>
+    <div style="font-size:11px;color:#94A3B8;margin-top:5px" id="apm-imp-fname">Nenhum arquivo selecionado</div>
+  </div>
+  <div id="apm-imp-map" style="display:none">
+    <div style="font-size:12px;font-weight:600;color:#0F2244;margin:14px 0 8px">Mapear colunas:</div>
+    <div class="apm-imp-cols">
+      <div><div class="apm-imp-lbl">✅ Avanços</div><select class="apm-imp-sel" id="apm-sel-av"><option value="">— selecione —</option></select></div>
+      <div><div class="apm-imp-lbl">🎯 Próx. Passos</div><select class="apm-imp-sel" id="apm-sel-pp"><option value="">— selecione —</option></select></div>
+      <div><div class="apm-imp-lbl">⚠️ Riscos</div><select class="apm-imp-sel" id="apm-sel-ri"><option value="">— selecione —</option></select></div>
+    </div>
+  </div>
+  <div class="apm-imp-status" id="apm-imp-status"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+    <button style="background:#F1F5F9;color:#475569;border:none;padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer" onclick="apmCloseImport()">Cancelar</button>
+    <button id="apm-imp-ok" style="display:none;background:#1E9E5E;color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="apmApplyImport()">Importar e aplicar</button>
+  </div>
+</div>
+</div>
 </body>
 </html>
