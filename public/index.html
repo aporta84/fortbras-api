@@ -1507,7 +1507,7 @@ function processFile(file){
       try{
         const fbObj={kpis:{},curvas:[],areas:[],avancos:[],riscos:[]};
         const _ind=rows(wb,'INDICADORES');
-        _ind.filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>{if(r[0]) fbObj.kpis[String(r[0]).trim()]=Number(r[1])||0;});
+        _ind.slice(2).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>{if(r[0]) fbObj.kpis[String(r[0]).trim()]=Number(r[1])||0;});
         const _cs=rows(wb,'CURVA_S');
         _cs.slice(2).filter(r=>r[0]&&String(r[0]).match(/^S\d+$/)).forEach(r=>fbObj.curvas.push({s:r[0],p:r[1],a:r[2]}));
         const _sa=rows(wb,'STATUS_AREAS');
@@ -1538,7 +1538,7 @@ function processFile(file){
       try{
         const _ind=rows(wb,'INDICADORES');
         const _map={};
-        _ind.forEach(function(r){ if(r[0]) _map[String(r[0]).trim()]=Number(r[1])||0; });
+        _ind.slice(2).forEach(function(r){ if(r[0]) _map[String(r[0]).trim()]=Number(r[1])||0; });
         _real = _map['Realizado'] || 0;
         _plan = _map['Planejado'] || 0;
         _desv = _real - _plan;
