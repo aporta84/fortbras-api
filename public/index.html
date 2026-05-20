@@ -440,11 +440,19 @@ table.tbl tr:hover td{background:var(--gray-light)}
 .apm-item-row{display:flex;gap:8px;align-items:flex-start}
 .apm-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:10px}
 .apm-dg{background:#22C55E}.apm-db{background:#1D5BBF}.apm-dr{background:#EF4444}
-.apm-ta{flex:1;border:1.5px solid #E2E8F0;border-radius:7px;padding:8px 11px;
-  font-size:12.5px;font-family:inherit;resize:none;line-height:1.55;
-  color:#1E293B;transition:all .2s;background:#FAFBFF;overflow:hidden;min-height:40px}
-.apm-ta:hover{border-color:#93C5FD;background:#F0F6FF}
-.apm-ta:focus{outline:none;border-color:#1D5BBF;background:#fff;box-shadow:0 0 0 3px rgba(29,91,191,.1)}
+.apm-editor-wrap{flex:1;border:1.5px solid #E2E8F0;border-radius:7px;background:#FAFBFF;transition:all .2s;overflow:hidden}
+.apm-editor-wrap:hover{border-color:#93C5FD;background:#F0F6FF}
+.apm-editor-wrap:focus-within{border-color:#1D5BBF;background:#fff;box-shadow:0 0 0 3px rgba(29,91,191,.1)}
+.apm-fmt-bar{display:flex;gap:3px;padding:4px 6px;border-bottom:1px solid #E2E8F0;background:#F8FAFC}
+.apm-fmt-btn{border:1px solid transparent;background:none;border-radius:4px;padding:2px 7px;
+  font-size:12px;cursor:pointer;color:#475569;font-family:inherit;line-height:1.4;transition:all .15s}
+.apm-fmt-btn:hover{background:#E2E8F0;border-color:#CBD5E1;color:#1D5BBF}
+.apm-fmt-btn.active{background:#DBEAFE;border-color:#93C5FD;color:#1D5BBF}
+.apm-fmt-btn b{font-weight:800}
+.apm-ta{padding:8px 11px;font-size:12.5px;font-family:inherit;line-height:1.55;
+  color:#1E293B;min-height:40px;outline:none;word-break:break-word}
+.apm-ta ul{padding-left:18px;margin:4px 0}
+.apm-ta li{margin:2px 0}
 .apm-rm{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:13px;
   padding:2px 4px;transition:color .2s;margin-top:7px;flex-shrink:0}
 .apm-rm:hover{color:#EF4444}
@@ -2373,36 +2381,72 @@ function apmOpen(idx){
   document.getElementById('apm-overlay').classList.add('open');
 }
 
+function apmMakeEditor(ph, html, colId, cntId){
+  var wrap=document.createElement('div'); wrap.className='apm-editor-wrap';
+  var bar=document.createElement('div'); bar.className='apm-fmt-bar';
+  function fmtBtn(label,cmd){
+    var b=document.createElement('button'); b.className='apm-fmt-btn';
+    b.innerHTML=label; b.title=cmd; b.type='button';
+    b.onmousedown=function(e){
+      e.preventDefault(); editor.focus();
+      document.execCommand(cmd,false,null); updateBtnState();
+    };
+    bar.appendChild(b); return b;
+  }
+  var btnB=fmtBtn('<b>N</b>','bold');
+  var btnI=fmtBtn('<i style="font-style:italic">I</i>','italic');
+  var btnUL=fmtBtn('&#8226; Lista','insertUnorderedList');
+  function updateBtnState(){
+    btnB.classList.toggle('active',document.queryCommandState('bold'));
+    btnI.classList.toggle('active',document.queryCommandState('italic'));
+    btnUL.classList.toggle('active',document.queryCommandState('insertUnorderedList'));
+  }
+  var editor=document.createElement('div'); editor.className='apm-ta';
+  editor.contentEditable='true';
+  editor.setAttribute('data-ph',ph);
+  if(!html||html.trim()==='') editor.setAttribute('data-empty','1');
+  else editor.innerHTML=html;
+  editor.onfocus=function(){ editor.removeAttribute('data-empty'); updateBtnState(); };
+  editor.onblur=function(){ if(!editor.textContent.trim()) editor.setAttribute('data-empty','1'); };
+  editor.onkeyup=editor.onmouseup=updateBtnState;
+  if(cntId) editor.oninput=function(){ apmUpdateCnt(colId,cntId); };
+  wrap.appendChild(bar); wrap.appendChild(editor);
+  return {wrap:wrap, editor:editor};
+}
+(function(){
+  if(document.getElementById('apm-ph-style')) return;
+  var s=document.createElement('style'); s.id='apm-ph-style';
+  s.textContent='.apm-ta[contenteditable][data-empty="1"]:before{content:attr(data-ph);color:#94A3B8;pointer-events:none;display:block}';
+  document.head.appendChild(s);
+})();
+
 function apmRenderCol(colId, items, dotCls, ph, cntId){
   var col = document.getElementById(colId);
   col.innerHTML = '';
-  (items&&items.length?items:[]).forEach(function(txt){
+  (items&&items.length?items:[]).forEach(function(html){
     var row=document.createElement('div'); row.className='apm-item-row';
-    var ta=document.createElement('textarea'); ta.className='apm-ta';
-    ta.value=txt; ta.placeholder=ph; ta.rows=2;
-    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
-    row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
-    row.appendChild(ta);
-    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+    var dot=document.createElement('div'); dot.className='apm-dot '+dotCls; dot.style.marginTop='14px';
+    row.appendChild(dot);
+    var ed=apmMakeEditor(ph, html, colId, cntId);
+    row.appendChild(ed.wrap);
+    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='\u2715'; rm.style.marginTop='10px';
     rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
     row.appendChild(rm);
     col.appendChild(row);
-    setTimeout(function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; },10);
   });
   var addBtn=document.createElement('button'); addBtn.className='apm-add';
   var lbls={'apm-col-av':'+ Adicionar avanço','apm-col-pp':'+ Adicionar próximo passo','apm-col-ri':'+ Adicionar risco'};
   addBtn.textContent=lbls[colId]||'+ Adicionar';
   addBtn.onclick=function(){
     var row=document.createElement('div'); row.className='apm-item-row';
-    var ta=document.createElement('textarea'); ta.className='apm-ta';
-    ta.placeholder=ph; ta.rows=2;
-    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
-    row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
-    row.appendChild(ta);
-    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+    var dot=document.createElement('div'); dot.className='apm-dot '+dotCls; dot.style.marginTop='14px';
+    row.appendChild(dot);
+    var ed=apmMakeEditor(ph, '', colId, cntId);
+    row.appendChild(ed.wrap);
+    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='\u2715'; rm.style.marginTop='10px';
     rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
     row.appendChild(rm);
-    col.insertBefore(row,addBtn); ta.focus(); apmUpdateCnt(colId,cntId);
+    col.insertBefore(row,addBtn); ed.editor.focus(); apmUpdateCnt(colId,cntId);
   };
   col.appendChild(addBtn);
   apmUpdateCnt(colId,cntId);
@@ -2425,7 +2469,7 @@ function apmCollect(){
   if(!_apmContent[_apmIdx]) _apmContent[_apmIdx]={sem:{tempo:'verde',escopo:'verde',equipe:'verde'},av:[],pp:[],ri:[]};
   [['apm-col-av','av'],['apm-col-pp','pp'],['apm-col-ri','ri']].forEach(function(pair){
     _apmContent[_apmIdx][pair[1]]=Array.from(document.getElementById(pair[0]).querySelectorAll('.apm-ta'))
-      .map(function(t){ return t.value.trim(); }).filter(Boolean);
+      .map(function(t){ return t.innerHTML.trim(); }).filter(function(v){ return v&&v!=='<br>'; });
   });
 }
 
