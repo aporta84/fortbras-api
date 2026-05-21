@@ -2456,6 +2456,12 @@ async function apmSave(){
   setTimeout(function(){ btn.className='apm-btn-save'; btn.textContent='💾 Salvar Painel'; },2500);
 }
 
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && document.getElementById('apm-overlay').classList.contains('open')){
+    apmClose();
+  }
+});
 function apmClose(){
   apmCollect();
   document.getElementById('apm-overlay').classList.remove('open');
@@ -2554,7 +2560,7 @@ setTimeout(function(){
 
 
 <!-- ── Modal Painel de Área ────────────────────────────────────────────────── -->
-<div id="apm-overlay" onclick="if(event.target===this)apmClose()">
+<div id="apm-overlay">
 <div id="apm-modal">
   <div class="apm-mh">
     <div class="apm-mh-main">
