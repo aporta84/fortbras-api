@@ -1737,69 +1737,37 @@ async function _loadDashboardFromAPI(){
 
 // ── Controle de Permissões ───────────────────────────────────────────────────
 function getPermUsers(){
-  try{ return JSON.parse(localStorage.getItem('fortbras_perm_users')||'null'); }
-  catch(e){ return null; }
-}
-function savePermUsers(users){ localStorage.setItem('fortbras_perm_users',JSON.stringify(users)); }
-
-function initPermUsers(){
-  // Sync AUTH_USERS into perm storage on first load
-  let stored = getPermUsers();
-  if(!stored){
-    stored = AUTH_USERS.map(u=>({
-      user: u.user,
-      pwd: u.pwd,
-      canUpload: ['aporta','admin'].includes(u.user),
-      canLogs:   ['aporta','admin'].includes(u.user),
-      canPerm:   ['aporta','admin'].includes(u.user)
-    }));
-    savePermUsers(stored);
-  }
-  return stored;
+  return null; // legado — usuários agora no PostgreSQL
 }
 
 async function renderPermTable(){
   const tbody = document.getElementById('perm-tbody');
   if(!tbody) return;
-
-  // Tenta carregar usuários do Firebase primeiro
-  if(window._fbReady && window._fbDb){
-    try{
-      const snap = await window._fbDb.ref('dashboard/usuarios').once('value');
-      const val = snap.val();
-      if(val && val.payload){
-        const fbUsers = JSON.parse(val.payload);
-        if(fbUsers && fbUsers.length > 0){
-          // Atualiza localStorage com dados do Firebase
-          savePermUsers(fbUsers);
-          AUTH_USERS.length = 0;
-          fbUsers.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
-        }
-      }
-    }catch(e){ console.warn('Firebase users load erro:', e); }
+  try {
+    const users = await apiGet('/users?all=0');
+    if(users.error){ tbody.innerHTML = `<tr><td colspan="7">Erro: ${users.error}</td></tr>`; return; }
+    const dot   = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
+    const badge = (u) => u.role==='admin'
+      ? '<span class="badge-admin-u">Administrador</span>'
+      : '<span class="badge-viewer-u">Visualizador</span>';
+    tbody.innerHTML = users.map(u=>`
+      <tr>
+        <td><strong>${u.username}</strong></td>
+        <td>••••••</td>
+        <td>${badge(u)}</td>
+        <td class="perm-center">${dot(true)}</td>
+        <td class="perm-center">${dot(u.can_upload)}</td>
+        <td class="perm-center">${dot(u.can_logs)}</td>
+        <td class="perm-center">
+          <div style="display:flex;gap:5px;justify-content:center">
+            <button class="btn-edit-u" onclick="editUserAPI(${u.id},'${u.username}',${u.role==='admin'},${!!u.can_upload},${!!u.can_logs},${!!u.can_perm})">Editar</button>
+            <button class="btn-del-u" onclick="deleteUserAPI(${u.id},'${u.username}')">Remover</button>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7">Erro ao carregar usuários.</td></tr>';
   }
-
-  const users = initPermUsers();
-  const dot   = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
-  const badge = (u) => u.canUpload
-    ? '<span class="badge-admin-u">Administrador</span>'
-    : '<span class="badge-viewer-u">Visualizador</span>';
-
-  tbody.innerHTML = users.map((u,i)=>`
-    <tr>
-      <td><strong>${u.user}</strong></td>
-      <td>••••••</td>
-      <td>${badge(u)}</td>
-      <td class="perm-center">${dot(true)}</td>
-      <td class="perm-center">${dot(u.canUpload)}</td>
-      <td class="perm-center">${dot(u.canLogs)}</td>
-      <td class="perm-center">
-        <div style="display:flex;gap:5px;justify-content:center">
-          <button class="btn-edit-u" onclick="editUser(${i})">Editar</button>
-          <button class="btn-del-u" onclick="deleteUser(${i})">Remover</button>
-        </div>
-      </td>
-    </tr>`).join('');
 }
 
 // Editar usuário via API
@@ -1826,45 +1794,9 @@ async function deleteUserAPI(id, username){
   renderPermTable();
 }
 
-async function deleteUser(i){
-  const users = initPermUsers();
-  if(!users[i]) return;
-  if(users[i].user === window._viewUser){ alert('Não é possível remover o usuário logado.'); return; }
-  if(!confirm('Remover usuário '+users[i].user+'?')) return;
+async function deleteUser(i){ /* legado — substituído por deleteUserAPI */ }
 
-  users.splice(i,1);
-  AUTH_USERS.length = 0;
-  users.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
-  savePermUsers(users);
-
-  // Remove do Firebase também
-  if(window._fbReady && window._fbDb){
-    try{
-      await window._fbDb.ref('dashboard/usuarios').set({
-        payload: JSON.stringify(users),
-        updated_at: new Date().toISOString()
-      });
-    }catch(e){ console.warn('Firebase delete erro:', e); }
-  }
-
-  renderPermTable();
-}
-
-function editUser(i){
-  const users = initPermUsers();
-  const u = users[i];
-  document.getElementById('nu-user').value = u.user;
-  document.getElementById('nu-pass').value = '';
-  const prof = u.canUpload && u.canLogs ? 'admin' : !u.canUpload && !u.canLogs ? 'viewer' : 'custom';
-  document.getElementById('nu-profile').value = prof;
-  syncNewPerms(prof);
-  document.getElementById('nu-upload').checked = u.canUpload;
-  document.getElementById('nu-logs').checked = u.canLogs;
-  document.getElementById('nu-perm').checked = u.canPerm||false;
-  document.getElementById('new-user-form').style.display='block';
-  // Tag for edit mode
-  document.getElementById('new-user-form').dataset.editIndex = i;
-}
+function editUser(i){ /* legado — substituído por editUserAPI */ }
 
 function toggleNewUserForm(){
   const f=document.getElementById('new-user-form');
@@ -1897,50 +1829,35 @@ function syncNewPerms(v){
 async function saveNewUser(){
   const user      = document.getElementById('nu-user').value.trim().toLowerCase();
   const pass      = document.getElementById('nu-pass').value.trim();
+  const role      = document.getElementById('nu-profile').value === 'admin' ? 'admin' : 'viewer';
   const canUpload = document.getElementById('nu-upload').checked;
   const canLogs   = document.getElementById('nu-logs').checked;
   const canPerm   = document.getElementById('nu-perm').checked;
   const f         = document.getElementById('new-user-form');
-  const editIdx   = f.dataset.editIndex !== undefined ? parseInt(f.dataset.editIndex) : -1;
+  const editApiId = f.dataset.editApiId ? parseInt(f.dataset.editApiId) : null;
 
   if(!user){ alert('Digite um nome de usuário.'); return; }
 
-  // Carrega usuários atuais
-  const users = initPermUsers();
-
-  if(editIdx >= 0){
-    // Editar existente
-    users[editIdx].user      = user;
-    if(pass) users[editIdx].pwd = pass;
-    users[editIdx].canUpload = canUpload;
-    users[editIdx].canLogs   = canLogs;
-    users[editIdx].canPerm   = canPerm;
-  } else {
-    // Novo usuário
-    if(users.find(u=>u.user===user)){ alert('Usuário já existe.'); return; }
-    if(!pass){ alert('Digite uma senha.'); return; }
-    users.push({user, pwd:pass, canUpload, canLogs, canPerm});
+  try {
+    let res;
+    if(editApiId){
+      // Editar usuário existente via API
+      const body = { role, can_upload: canUpload?1:0, can_logs: canLogs?1:0, can_perm: canPerm?1:0 };
+      if(pass) body.password = pass;
+      res = await apiPut('/users/'+editApiId, body);
+    } else {
+      // Criar novo usuário via API
+      if(!pass){ alert('Digite uma senha.'); return; }
+      res = await apiPost('/users', { username:user, password:pass, role,
+        can_upload: canUpload?1:0, can_logs: canLogs?1:0, can_perm: canPerm?1:0 });
+    }
+    if(res.error){ alert('Erro: '+res.error); return; }
+    renderPermTable();
+    toggleNewUserForm();
+    alert(editApiId ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
+  } catch(e) {
+    alert('Erro ao salvar usuário: '+e.message);
   }
-
-  // Salva no localStorage
-  AUTH_USERS.length = 0;
-  users.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
-  savePermUsers(users);
-
-  // Salva no Firebase para sincronizar entre dispositivos
-  if(window._fbReady && window._fbDb){
-    try{
-      await window._fbDb.ref('dashboard/usuarios').set({
-        payload: JSON.stringify(users),
-        updated_at: new Date().toISOString()
-      });
-      console.log('✅ Usuários salvos no Firebase');
-    }catch(e){ console.warn('Firebase users save erro:', e); }
-  }
-
-  renderPermTable();
-  toggleNewUserForm();
-  alert(editIdx >= 0 ? '✅ Usuário atualizado!' : '✅ Usuário criado com sucesso!');
 }
 
 window.addEventListener('load', function(){
