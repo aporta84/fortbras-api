@@ -1627,7 +1627,7 @@ async function checkViewLogin(){
       localStorage.setItem('fortbras_user', JSON.stringify(r.user));
       window._viewUser = user;
       _applyLoginPermissions(r.user);
-      if(r.user.role==='admin' || r.user.can_perm){ initPermUsers(); renderPermTable(); }
+      if(r.user.role==='admin' || r.user.can_perm){ renderPermTable(); }
       setTimeout(fbLoadData, 800);
     } else {
       msg.textContent = r.error || 'Usuário ou senha incorretos.';
@@ -1876,35 +1876,8 @@ window.addEventListener('load', function(){
     }
   }, 3000);
 
-  // Carrega usuários do Firebase
-  setTimeout(function(){
-    if(window._fbReady && window._fbDb){
-      window._fbDb.ref('dashboard/usuarios').once('value').then(function(snap){
-        const val = snap.val();
-        if(val && val.payload){
-          try{
-            const fbUsers = JSON.parse(val.payload);
-            if(fbUsers && fbUsers.length > 0){
-              savePermUsers(fbUsers);
-              AUTH_USERS.length = 0;
-              fbUsers.forEach(u => AUTH_USERS.push({user:u.user, pwd:u.pwd}));
-              console.log('✅ Usuários carregados do Firebase:', fbUsers.length);
-            }
-          }catch(e){ console.warn('Firebase usuarios parse erro:', e); }
-        }
-      }).catch(e => console.warn('Firebase usuarios load erro:', e));
-    }
-  }, 2000);
-
-  // Sincroniza usuários
-  setTimeout(function(){
-    const stored = initPermUsers();
-    if(stored && stored.length > 0){
-      AUTH_USERS.length = 0;
-      stored.forEach(u => AUTH_USERS.push({user: u.user, pwd: u.pwd}));
-    }
-    renderPermTable();
-  }, 600);
+  // Renderiza tabela de usuários (carrega da API)
+  setTimeout(function(){ renderPermTable(); }, 600);
 });
 
 // ── Log de Acessos ──────────────────────────────────────────────────────────
