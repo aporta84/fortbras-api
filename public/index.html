@@ -1510,8 +1510,8 @@ function processFile(file){
         _ri.slice(2).filter(r=>r[0]&&!String(r[0]).startsWith('⚠')).forEach(r=>fbObj.riscos.push(r));
         fbSaveData(fbObj);
       }catch(fe){console.warn('Firebase save:',fe);}
-      // Se backend disponível, envia também para API
-      if(_backendOk && _jwtToken){
+      // Envia sempre para a API (PostgreSQL) se autenticado
+      if(_jwtToken){
         const formData = new FormData();
         formData.append('file', file);
         fetch(API_URL+'/upload', {
@@ -1519,9 +1519,18 @@ function processFile(file){
           headers:{'Authorization':'Bearer '+_jwtToken},
           body:formData
         }).then(r=>r.json()).then(function(d){
-          if(d.error) console.warn('API upload error:', d.error);
-          else console.log('✅ Dados enviados ao backend');
-        }).catch(function(e){ console.warn('API upload failed:', e); });
+          if(d.error){
+            console.warn('API upload error:', d.error);
+            const er2=document.getElementById('imp-err');
+            if(er2){ er2.textContent='⚠ Erro ao salvar no servidor: '+d.error; er2.style.display='block'; }
+          } else {
+            console.log('✅ Dados salvos no servidor:', d.semana, 'R:'+d.realizado+'% P:'+d.planejado+'%');
+          }
+        }).catch(function(e){
+          console.warn('API upload failed:', e);
+          const er2=document.getElementById('imp-err');
+          if(er2){ er2.textContent='⚠ Falha ao conectar ao servidor.'; er2.style.display='block'; }
+        });
       }
       const now=new Date();
       const dateStr=now.toLocaleDateString('pt-BR')+', '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
