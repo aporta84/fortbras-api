@@ -1,45 +1,41 @@
 const express  = require('express');
 const router   = express.Router();
 const multer   = require('multer');
-const fs       = require('fs');
 const db       = require('../config/database');
 const { parseWorkbook } = require('../services/xlsx.service');
 const { authenticate, canUpload } = require('../middleware/auth');
-require('dotenv').config();
 
-const uploadsDir = process.env.UPLOADS_DIR || './data/uploads';
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req,file,cb) => cb(null, uploadsDir),
-  filename:    (req,file,cb) => cb(null, `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9._-]/g,'_')}`)
-});
+// Usa memória em vez de disco (evita problema de storage efêmero no Render)
 const upload = multer({
-  storage,
-  fileFilter: (req,file,cb) => { if (!file.originalname.match(/\.(xlsx|xls)$/i)) return cb(new Error('Apenas .xlsx')); cb(null,true); },
+  storage: multer.memoryStorage(),
+  fileFilter: (req,file,cb) => {
+    if (!file.originalname.match(/\.(xlsx|xls)$/i)) return cb(new Error('Apenas .xlsx'));
+    cb(null,true);
+  },
   limits: { fileSize: (Number(process.env.MAX_FILE_SIZE_MB)||10)*1024*1024 }
 });
 
-router.post('/', authenticate, canUpload, upload.single('file'), (req, res) => {
+router.post('/', authenticate, canUpload, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error:'Nenhum arquivo enviado' });
   try {
-    const data = parseWorkbook(req.file.path);
-    db.history.insert({ filename:req.file.originalname, uploaded_by:req.user.username,
+    const data = parseWorkbook(req.file.buffer);
+    await db.history.insert({ filename:req.file.originalname, uploaded_by:req.user.username,
       realizado:data.realizado, planejado:data.planejado, desvio:data.desvio, semana:data.semana });
-    db.dashboard.replace({ filename:req.file.originalname, kpis:data.kpis, curva_s:data.curva_s,
+    await db.dashboard.replace({ filename:req.file.originalname, kpis:data.kpis, curva_s:data.curva_s,
       areas:data.areas, avancos:data.avancos, riscos:data.riscos,
       uploaded_by:req.user.username, realizado:data.realizado, planejado:data.planejado,
       desvio:data.desvio, semana:data.semana });
     res.json({ success:true, message:'Planilha processada com sucesso', filename:req.file.originalname,
       semana:data.semana, realizado:data.realizado, planejado:data.planejado, desvio:data.desvio });
   } catch(err) {
-    try { fs.unlinkSync(req.file.path); } catch(e){}
     res.status(500).json({ error:'Erro ao processar planilha: '+err.message });
   }
 });
 
-router.get('/history', authenticate, (req, res) => {
-  res.json(db.history.findAll(Math.min(parseInt(req.query.limit)||20, 50)));
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    res.json(await db.history.findAll(Math.min(parseInt(req.query.limit)||20, 50)));
+  } catch(e) { res.status(500).json({ error:'Erro interno' }); }
 });
 
 module.exports = router;

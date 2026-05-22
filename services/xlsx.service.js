@@ -14,8 +14,10 @@ function isDataRow(row) {
   return true;
 }
 
-function parseWorkbook(filePath) {
-  const wb = XLSX.readFile(filePath);
+function parseWorkbook(filePathOrBuffer) {
+  const wb = Buffer.isBuffer(filePathOrBuffer)
+    ? XLSX.read(filePathOrBuffer, { type: 'buffer' })
+    : XLSX.readFile(filePathOrBuffer);
   const result = {};
 
   // INDICADORES
