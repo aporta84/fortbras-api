@@ -1393,14 +1393,7 @@ async function checkBackend(){
   console.log(_backendOk ? '✅ Backend disponível' : '⚠️ Backend offline — usando modo local');
 }
 
-const AUTH_USERS = [
-  { user: 'aporta',             pwd: '123456'        },
-  { user: 'admin',              pwd: 'admin'         },
-  { user: 'fortbras',           pwd: 'fortbras'      },
-  { user: 'lucimario.campos',   pwd: 'lucimario123'  },
-  { user: 'rogerio.tambellini', pwd: 'tambellini123' },
-  { user: 'jorge.cavalcanti',   pwd: 'jorge123'      }
-];
+// Autenticação centralizada via API — sem senhas hardcoded
 
 let _authOk = false; // sessão autenticada enquanto a página estiver aberta
 
@@ -1419,37 +1412,37 @@ function closePwdModal(){
   document.getElementById('pwd-overlay').classList.remove('open');
 }
 
-function checkPwd(){
-  const user=(document.getElementById('pwd-user').value||'').trim().toLowerCase();
-  const pass=(document.getElementById('pwd-pass').value||'');
-  const msg=document.getElementById('pwd-msg');
-  const _uploadPriv=['aporta','admin'];
-  const match=AUTH_USERS.find(u=>u.user===user && u.pwd===pass);
-  if(match && !_uploadPriv.includes(user)){
-    msg.textContent='Sem permissão para fazer upload.';
-    msg.className='err';
-    return;
-  }
-  if(match){
-    _authOk=true;
-    msg.textContent='✔ Acesso liberado!';
-    msg.className='ok';
-    window._currentUser = user;
-    setTimeout(()=>{
-      closePwdModal();
-      // Se tinha um arquivo arrastado antes da autenticação, processa
-      if(window._pendingDropFile){
-        processFile(window._pendingDropFile);
-        window._pendingDropFile=null;
-      } else {
-        document.getElementById('xlsxFile').click();
+async function checkPwd(){
+  const user = (document.getElementById('pwd-user').value||'').trim().toLowerCase();
+  const pass = (document.getElementById('pwd-pass').value||'');
+  const msg  = document.getElementById('pwd-msg');
+  msg.textContent = ''; msg.className = '';
+  try {
+    const r = await apiPost('/auth/login', { username: user, password: pass }, false);
+    if(r.accessToken){
+      if(!r.user.can_upload && r.user.role !== 'admin'){
+        msg.textContent = 'Sem permissão para fazer upload.';
+        msg.className = 'err'; return;
       }
-    },500);
-  } else {
-    msg.textContent='Usuário ou senha incorretos.';
-    msg.className='err';
-    document.getElementById('pwd-pass').value='';
-    document.getElementById('pwd-pass').focus();
+      _jwtToken = r.accessToken; _currentUser = r.user;
+      localStorage.setItem('fortbras_jwt', r.accessToken);
+      localStorage.setItem('fortbras_user', JSON.stringify(r.user));
+      _authOk = true; window._currentUser = user;
+      msg.textContent = '✔ Acesso liberado!'; msg.className = 'ok';
+      setTimeout(()=>{
+        closePwdModal();
+        if(window._pendingDropFile){ processFile(window._pendingDropFile); window._pendingDropFile=null; }
+        else { document.getElementById('xlsxFile').click(); }
+      }, 500);
+    } else {
+      msg.textContent = r.error || 'Usuário ou senha incorretos.';
+      msg.className = 'err';
+      document.getElementById('pwd-pass').value = '';
+      document.getElementById('pwd-pass').focus();
+    }
+  } catch(e) {
+    msg.textContent = 'Erro ao conectar ao servidor.';
+    msg.className = 'err';
   }
 }
 
@@ -1619,45 +1612,34 @@ function toggleDark(on){
 // ── Login de Visualização (acesso ao dashboard) ──────────────────────────────
 
 
-function checkViewLogin(){
+async function checkViewLogin(){
   const user = (document.getElementById('view-user').value||'').trim().toLowerCase();
   const pass = (document.getElementById('view-pass').value||'').trim();
   const msg  = document.getElementById('view-msg');
-  msg.textContent = '';
+  const btn  = document.getElementById('view-ok-btn');
+  msg.textContent = ''; btn.disabled = true; btn.textContent = 'Entrando...';
 
-  // 1. Verifica usuários hardcoded (sempre funciona)
-  const HARDCODED = [
-    {user:'aporta',             pwd:'123456'},
-    {user:'admin',              pwd:'admin'},
-    {user:'fortbras',           pwd:'fortbras'},
-    {user:'lucimario.campos',   pwd:'lucimario123'},
-    {user:'rogerio.tambellini', pwd:'tambellini123'},
-    {user:'jorge.cavalcanti',   pwd:'jorge123'}
-  ];
-  let match = HARDCODED.find(u => u.user===user && u.pwd===pass);
-
-  // 2. Se não achou, verifica usuários criados no painel (localStorage)
-  if(!match){
-    try{
-      const stored = JSON.parse(localStorage.getItem('fortbras_perm_users')||'[]');
-      match = stored.find(u => u.user && u.user.toLowerCase()===user && u.pwd===pass);
-    }catch(e){}
-  }
-
-  if(match){
-    window._viewUser = user;
-    const isAdmin = ['aporta','admin'].includes(user);
-    _applyLoginPermissions({
-      username:user, role:isAdmin?'admin':'viewer',
-      can_upload:isAdmin, can_perm:isAdmin, can_logs:true
-    });
-    if(isAdmin){ initPermUsers(); renderPermTable(); }
-    setTimeout(fbLoadData, 800);
-  } else {
-    msg.textContent = 'Usuário ou senha incorretos.';
+  try {
+    const r = await apiPost('/auth/login', { username: user, password: pass }, false);
+    if(r.accessToken){
+      _jwtToken = r.accessToken; _currentUser = r.user;
+      localStorage.setItem('fortbras_jwt', r.accessToken);
+      localStorage.setItem('fortbras_user', JSON.stringify(r.user));
+      window._viewUser = user;
+      _applyLoginPermissions(r.user);
+      if(r.user.role==='admin' || r.user.can_perm){ initPermUsers(); renderPermTable(); }
+      setTimeout(fbLoadData, 800);
+    } else {
+      msg.textContent = r.error || 'Usuário ou senha incorretos.';
+      msg.className = 'err';
+      document.getElementById('view-pass').value = '';
+      document.getElementById('view-pass').focus();
+    }
+  } catch(e) {
+    msg.textContent = 'Erro ao conectar ao servidor.';
     msg.className = 'err';
-    document.getElementById('view-pass').value = '';
-    document.getElementById('view-pass').focus();
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar no Dashboard';
   }
 }
 
