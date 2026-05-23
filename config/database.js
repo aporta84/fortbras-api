@@ -94,6 +94,26 @@ async function init() {
     }
     console.log('✅ Usuários iniciais criados no PostgreSQL');
   }
+
+  // Migração: garante que usuários viewer não tenham upload/logs/perm
+  // Executa apenas se a coluna de controle indicar versão anterior
+  const migKey = 'viewer_perms_reset_v1';
+  const metaExists = await pool.query(
+    `SELECT to_regclass('public.app_meta') AS t`
+  );
+  if (!metaExists.rows[0].t) {
+    await pool.query(`CREATE TABLE app_meta (key VARCHAR(100) PRIMARY KEY, value TEXT)`);
+  }
+  const already = await q(`SELECT value FROM app_meta WHERE key=$1`, [migKey]);
+  if (!already.length) {
+    await pool.query(
+      `UPDATE users SET can_upload=0, can_logs=0, can_perm=0
+       WHERE role='viewer'`
+    );
+    await pool.query(`INSERT INTO app_meta (key,value) VALUES ($1,'done')`, [migKey]);
+    console.log('✅ Migração viewer_perms_reset_v1 aplicada');
+  }
+
   console.log('✅ PostgreSQL pronto');
 }
 

@@ -368,6 +368,8 @@ table.tbl tr:hover td{background:var(--gray-light)}
   .dot-yes{background:#1E9E5E}
   .dot-no{background:#E2E8F0}
   .perm-center{text-align:center}
+  .dot-toggle{cursor:pointer;transition:transform .15s,filter .15s}
+  .dot-toggle:hover{transform:scale(1.35);filter:brightness(.85)}
   .btn-new-user{background:#1D5BBF;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer}
   .btn-new-user:hover{background:#1648A0}
   .btn-edit-u{background:#EFF6FF;color:#1D5BBF;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer}
@@ -717,6 +719,7 @@ table.tbl tr:hover td{background:var(--gray-light)}
           <th style="text-align:center">Visualizar</th>
           <th style="text-align:center">Upload</th>
           <th style="text-align:center">Logs</th>
+          <th style="text-align:center">Gerir Perm.</th>
           <th style="text-align:center">Ações</th>
         </tr>
       </thead>
@@ -1759,29 +1762,59 @@ async function renderPermTable(){
   if(!tbody) return;
   try {
     const users = await apiGet('/users?all=0');
-    if(users.error){ tbody.innerHTML = `<tr><td colspan="7">Erro: ${users.error}</td></tr>`; return; }
-    const dot   = (v) => `<div class="perm-dot ${v?'dot-yes':'dot-no'}" style="margin:0 auto"></div>`;
+    if(users.error){ tbody.innerHTML = `<tr><td colspan="8">Erro: ${users.error}</td></tr>`; return; }
+
+    // Verifica se o usuário logado pode gerenciar permissões
+    const cu = JSON.parse(localStorage.getItem('fortbras_user')||'{}');
+    const canManage = cu.role==='admin' || !!cu.can_perm;
+
     const badge = (u) => u.role==='admin'
       ? '<span class="badge-admin-u">Administrador</span>'
       : '<span class="badge-viewer-u">Visualizador</span>';
-    tbody.innerHTML = users.map(u=>`
-      <tr>
+
+    // dot: se canManage e não é admin, torna clicável para toggle
+    const dot = (uid, field, val, locked) => {
+      const cls = val ? 'dot-yes' : 'dot-no';
+      if(!locked && canManage){
+        const tip = val ? 'Clique para remover acesso' : 'Clique para conceder acesso';
+        return `<div class="perm-dot ${cls} dot-toggle" style="margin:0 auto" title="${tip}" onclick="togglePerm(${uid},'${field}',${val?1:0})"></div>`;
+      }
+      return `<div class="perm-dot ${cls}" style="margin:0 auto"></div>`;
+    };
+
+    tbody.innerHTML = users.map(u=>{
+      const isAdmin = u.role==='admin';
+      return `<tr>
         <td><strong>${u.username}</strong></td>
         <td>••••••</td>
         <td>${badge(u)}</td>
-        <td class="perm-center">${dot(true)}</td>
-        <td class="perm-center">${dot(u.can_upload)}</td>
-        <td class="perm-center">${dot(u.can_logs)}</td>
+        <td class="perm-center">${dot(u.id,'',true,true)}</td>
+        <td class="perm-center">${dot(u.id,'can_upload',u.can_upload,isAdmin)}</td>
+        <td class="perm-center">${dot(u.id,'can_logs',u.can_logs,isAdmin)}</td>
+        <td class="perm-center">${dot(u.id,'can_perm',u.can_perm,isAdmin)}</td>
         <td class="perm-center">
           <div style="display:flex;gap:5px;justify-content:center">
-            <button class="btn-edit-u" onclick="editUserAPI(${u.id},'${u.username}',${u.role==='admin'},${!!u.can_upload},${!!u.can_logs},${!!u.can_perm})">Editar</button>
+            <button class="btn-edit-u" onclick="editUserAPI(${u.id},'${u.username}',${isAdmin},${!!u.can_upload},${!!u.can_logs},${!!u.can_perm})">Editar</button>
             <button class="btn-del-u" onclick="deleteUserAPI(${u.id},'${u.username}')">Remover</button>
           </div>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="7">Erro ao carregar usuários.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8">Erro ao carregar usuários.</td></tr>';
   }
+}
+
+// Toggle rápido de permissão via clique no dot
+async function togglePerm(userId, field, currentVal){
+  if(!field) return;
+  try {
+    const body = {};
+    body[field] = currentVal ? 0 : 1;
+    const r = await apiPut('/users/'+userId, body);
+    if(r && r.error){ alert('Erro: '+r.error); return; }
+    renderPermTable();
+  } catch(e){ alert('Erro ao alterar permissão: '+e.message); }
 }
 
 // Editar usuário via API
