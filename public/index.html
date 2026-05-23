@@ -458,6 +458,15 @@ table.tbl tr:hover td{background:var(--gray-light)}
   padding:8px;font-size:11.5px;color:#94A3B8;cursor:pointer;transition:all .2s;
   display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:2px}
 .apm-add:hover{border-color:#1D5BBF;color:#1D5BBF;background:#EFF6FF}
+/* ── Modo somente-leitura (usuários sem permissão de edição) ── */
+#apm-modal.readonly .apm-add{display:none!important}
+#apm-modal.readonly .apm-rm{display:none!important}
+#apm-modal.readonly .apm-ta{pointer-events:none;resize:none;background:transparent;border-color:#F1F5F9;color:#334155;cursor:default}
+#apm-modal.readonly .apm-sopt{pointer-events:none;cursor:default!important;opacity:.7}
+#apm-modal.readonly .apm-toolbar{display:none!important}
+#apm-modal.readonly #apm-btn-save{display:none!important}
+.apm-ro-badge{display:none;align-items:center;gap:5px;background:rgba(255,255,255,.12);border-radius:20px;padding:3px 11px;color:#CBD5E1;font-size:11px;font-weight:500;border:1px solid rgba(255,255,255,.2)}
+#apm-modal.readonly .apm-ro-badge{display:inline-flex!important}
 .apm-footer{padding:12px 22px;border-top:1px solid #E2E8F0;background:#F8FAFC;
   display:flex;align-items:center;gap:12px;flex-shrink:0}
 .apm-finfo{font-size:11px;color:#94A3B8}
@@ -2246,10 +2255,21 @@ function _apmSig(r,d){
   return        {color:'#EF4444',label:'Crítico',bg:'#FEE2E2'};
 }
 
+function _apmIsAdmin(){
+  try {
+    if(window._currentUser && window._currentUser.role==='admin') return true;
+    var cu = JSON.parse(localStorage.getItem('fortbras_user')||'{}');
+    return cu.role==='admin';
+  } catch(e){ return false; }
+}
+
 function apmOpen(idx){
   if(!areaRows||!areaRows[idx]) return;
   _apmIdx = idx;
   var a = areaRows[idx];
+
+  // Aplica modo readonly para usuários sem perfil admin
+  document.getElementById('apm-modal').classList.toggle('readonly', !_apmIsAdmin());
   var cv = Math.max(0,100-a.r);
   var sig = _apmSig(a.r,a.d);
 
@@ -2293,36 +2313,49 @@ function apmOpen(idx){
 
 function apmRenderCol(colId, items, dotCls, ph, cntId){
   var col = document.getElementById(colId);
+  var isRO = document.getElementById('apm-modal').classList.contains('readonly');
   col.innerHTML = '';
-  (items&&items.length?items:[]).forEach(function(txt){
+  var list = items&&items.length ? items : [];
+  if(isRO && !list.length){
+    // Visualizadores veem mensagem amigável quando coluna está vazia
+    col.innerHTML='<div style="text-align:center;color:#94A3B8;font-size:12px;padding:24px 8px">Sem registros</div>';
+    apmUpdateCnt(colId,cntId);
+    return;
+  }
+  list.forEach(function(txt){
     var row=document.createElement('div'); row.className='apm-item-row';
     var ta=document.createElement('textarea'); ta.className='apm-ta';
     ta.value=txt; ta.placeholder=ph; ta.rows=3;
-    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
+    if(isRO){ ta.readOnly=true; }
+    else { ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); }; }
     row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
     row.appendChild(ta);
-    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
-    rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
-    row.appendChild(rm);
+    if(!isRO){
+      var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+      rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
+      row.appendChild(rm);
+    }
     col.appendChild(row);
     setTimeout(function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; },10);
   });
-  var addBtn=document.createElement('button'); addBtn.className='apm-add';
-  var lbls={'apm-col-av':'+ Adicionar avanço','apm-col-pp':'+ Adicionar próximo passo','apm-col-ri':'+ Adicionar risco'};
-  addBtn.textContent=lbls[colId]||'+ Adicionar';
-  addBtn.onclick=function(){
-    var row=document.createElement('div'); row.className='apm-item-row';
-    var ta=document.createElement('textarea'); ta.className='apm-ta';
-    ta.placeholder=ph; ta.rows=3;
-    ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
-    row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
-    row.appendChild(ta);
-    var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
-    rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
-    row.appendChild(rm);
-    col.insertBefore(row,addBtn); ta.focus(); apmUpdateCnt(colId,cntId);
-  };
-  col.appendChild(addBtn);
+  if(!isRO){
+    var addBtn=document.createElement('button'); addBtn.className='apm-add';
+    var lbls={'apm-col-av':'+ Adicionar avanço','apm-col-pp':'+ Adicionar próximo passo','apm-col-ri':'+ Adicionar risco'};
+    addBtn.textContent=lbls[colId]||'+ Adicionar';
+    addBtn.onclick=function(){
+      var row=document.createElement('div'); row.className='apm-item-row';
+      var ta=document.createElement('textarea'); ta.className='apm-ta';
+      ta.placeholder=ph; ta.rows=3;
+      ta.oninput=function(){ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; apmUpdateCnt(colId,cntId); };
+      row.innerHTML='<div class="apm-dot '+dotCls+'"></div>';
+      row.appendChild(ta);
+      var rm=document.createElement('button'); rm.className='apm-rm'; rm.textContent='✕';
+      rm.onclick=function(){ row.remove(); apmUpdateCnt(colId,cntId); };
+      row.appendChild(rm);
+      col.insertBefore(row,addBtn); ta.focus(); apmUpdateCnt(colId,cntId);
+    };
+    col.appendChild(addBtn);
+  }
   apmUpdateCnt(colId,cntId);
 }
 
@@ -2484,7 +2517,10 @@ setTimeout(function(){
   <div class="apm-mh">
     <div class="apm-mh-main">
       <div class="apm-mh-name" id="apm-name">Área</div>
-      <div class="apm-mh-sub">Painel de Status Detalhado · Plano de Conversão Menil</div>
+      <div class="apm-mh-sub" style="display:flex;align-items:center;gap:8px">
+        Painel de Status Detalhado · Plano de Conversão Menil
+        <span class="apm-ro-badge">🔒 Somente Visualização</span>
+      </div>
     </div>
     <div class="apm-sems">
       <div class="apm-sem-col">
