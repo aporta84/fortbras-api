@@ -1069,7 +1069,7 @@ async function loadHistory(){
   const tbody=document.getElementById('history-tbody');
   if(!tbody) return;
   try {
-    const token = _jwtToken || localStorage.getItem('fortbras_jwt');
+    const token = localStorage.getItem('fortbras_jwt') || (typeof _jwtToken !== 'undefined' ? _jwtToken : null);
     if(!token){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Faça login para ver o histórico.</td></tr>'; return; }
     const r = await fetch(API_URL+'/upload/history?limit=50', { headers:{'Authorization':'Bearer '+token} });
     if(!r.ok){ throw new Error('status '+r.status); }
@@ -1113,9 +1113,14 @@ async function loadHistory(){
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Erro ao carregar histórico.</td></tr>';
   }
 }
-loadHistory();
+// Chama loadHistory após o DOM e todos os scripts estarem prontos
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', loadHistory);
+} else {
+  setTimeout(loadHistory, 0);
+}
 
-function saveHistory(entry){ loadHistory(); } // mantém chamadas existentes sem quebrar
+function saveHistory(entry){ setTimeout(loadHistory, 1000); } // mantém chamadas existentes sem quebrar
 
 function handleXLSX(input){
   const file=input.files[0]; if(!file) return;
