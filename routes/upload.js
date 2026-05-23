@@ -3,7 +3,7 @@ const router   = express.Router();
 const multer   = require('multer');
 const db       = require('../config/database');
 const { parseWorkbook } = require('../services/xlsx.service');
-const { authenticate, canUpload } = require('../middleware/auth');
+const { authenticate, adminOnly, canUpload } = require('../middleware/auth');
 
 // Usa memória em vez de disco (evita problema de storage efêmero no Render)
 const upload = multer({
@@ -36,6 +36,16 @@ router.get('/history', authenticate, async (req, res) => {
   try {
     res.json(await db.history.findAll(Math.min(parseInt(req.query.limit)||20, 50)));
   } catch(e) { res.status(500).json({ error:'Erro interno' }); }
+});
+
+// Limpa histórico antigo — mantém apenas entradas do dia atual (admin only)
+router.delete('/history/old', authenticate, adminOnly, async (req, res) => {
+  try {
+    const { rowCount } = await db.pool.query(
+      `DELETE FROM upload_history WHERE created_at::date < CURRENT_DATE`
+    );
+    res.json({ success: true, deleted: rowCount, message: `${rowCount} entradas antigas removidas` });
+  } catch(e) { res.status(500).json({ error: 'Erro ao limpar histórico: ' + e.message }); }
 });
 
 module.exports = router;

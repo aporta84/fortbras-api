@@ -227,6 +227,8 @@ if(typeof XLSX !== 'undefined') window.XLSX = XLSX;
   .history-table tr:hover td{background:#F8FAFC}
   .badge-ativo{background:#D1FAE5;color:#065F46;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700}
   .badge-historico{background:#F1F5F9;color:#64748B;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600}
+  .btn-clean-hist{margin-left:auto;font-size:11px;font-weight:600;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:4px 10px;cursor:pointer;transition:background .15s;display:none}
+  .btn-clean-hist:hover{background:#FEE2E2}
   /* ── Last update tag in footer ── */
   .footer-update{text-align:center;font-size:11px;color:#1D5BBF;font-weight:600;padding:6px 0 2px;display:none}
   body.dark-mode .file-card,.dark-mode .history-section{background:#1E293B;border-color:#334155}
@@ -677,7 +679,10 @@ table.tbl tr:hover td{background:var(--gray-light)}
         <p style="font-size:10px;color:#94A3B8;margin-top:10px;text-align:center">💡 Na janela de impressão, selecione <strong>"Salvar como PDF"</strong> como destino</p>
       </div>
     <div class="history-section">
-      <div class="history-title">🕓 Histórico de Uploads</div>
+      <div class="history-title" style="display:flex;align-items:center;gap:8px">
+        🕓 Histórico de Uploads
+        <button id="btn-clean-history" class="btn-clean-hist" onclick="cleanOldHistory()">🗑 Limpar antigos</button>
+      </div>
       <table class="history-table">
         <thead>
           <tr>
@@ -1096,6 +1101,13 @@ async function loadHistory(){
         <td style="color:${dev>=0?'#1E9E5E':'#DC2626'}">${(dev>=0?'+':'')+dev+'%'}</td>`;
       tbody.appendChild(tr);
     });
+    // Mostra botão de limpeza apenas para admins
+    try {
+      const cu = JSON.parse(localStorage.getItem('fortbras_user')||'{}');
+      const cleanBtn = document.getElementById('btn-clean-history');
+      if(cleanBtn) cleanBtn.style.display = (cu.role==='admin') ? 'inline-block' : 'none';
+    } catch(_){}
+
     // Atualiza card "Arquivo Ativo"
     const active = rows.find(function(h){ return h.is_active==1; });
     if(active){
@@ -1121,6 +1133,24 @@ if(document.readyState === 'loading'){
 }
 
 function saveHistory(entry){ setTimeout(loadHistory, 1000); } // mantém chamadas existentes sem quebrar
+
+async function cleanOldHistory(){
+  if(!confirm('Remover todos os registros de dias anteriores? Apenas os uploads de hoje serão mantidos.')) return;
+  const token = localStorage.getItem('fortbras_jwt') || (typeof _jwtToken !== 'undefined' ? _jwtToken : null);
+  if(!token){ alert('Faça login primeiro.'); return; }
+  try {
+    const r = await fetch(API_URL+'/upload/history/old', {
+      method:'DELETE',
+      headers:{'Authorization':'Bearer '+token}
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Erro '+r.status);
+    alert('✅ ' + (d.deleted===0 ? 'Nenhum registro antigo encontrado.' : d.deleted + ' registro(s) antigo(s) removido(s).'));
+    loadHistory();
+  } catch(e){
+    alert('Erro ao limpar histórico: '+e.message);
+  }
+}
 
 function handleXLSX(input){
   const file=input.files[0]; if(!file) return;
