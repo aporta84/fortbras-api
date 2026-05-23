@@ -1062,93 +1062,60 @@ function switchTab(tab){
   document.getElementById('tab-arquivos').classList.toggle('active', tab==='arquivos');
 }
 
-// ── Histórico de uploads (localStorage) ──
-// ── Histórico fixo: apenas 19/05 e 13/05/2026 ───────────────────────────────
-(function(){
-  const hist = JSON.parse(localStorage.getItem('fortbras_upload_history')||'[]');
-  // Mantém apenas 19/05/2026 11:01, 19/05/2026 10:51 excluídos, e 13/05/2026 21:11
-  const excluded = ['19/05/2026, 10:55','19/05/2026, 10:51'];
-  const filtered = hist.filter(function(h){
-    if(!h.date) return false;
-    if(excluded.indexOf(h.date) > -1) return false;
-    return h.date.startsWith('19/05/2026') || h.date === '13/05/2026, 21:11';
-  });
-  // Garante que 13/05 existe com realizado=37
-  const has1305 = filtered.some(function(h){ return h.date && h.date === '13/05/2026, 21:11'; });
-  if(!has1305){
-    filtered.push({
-      name: 'Dados_Dashboard_Fortbras.xlsx',
-      date: '13/05/2026, 21:11',
-      realizado: 37,
-      planejado: 35,
-      desvio: 2
-    });
-  } else {
-    // Corrige realizado=37 na entrada 13/05
-    filtered.forEach(function(h){
-      if(h.date === '13/05/2026, 21:11'){
-        h.realizado = 37;
-        h.planejado = 35;
-        h.desvio = 2;
-      }
-    });
-  }
-// Adiciona entrada fixa 19/05/2026 11:01 se não existir
-  const has1901 = filtered.some(function(h){ return h.date === '19/05/2026, 11:01'; });
-  if(!has1901){
-    filtered.unshift({
-      name: 'Dados_Dashboard_Fortbras.xlsx',
-      date: '19/05/2026, 11:01',
-      realizado: 41,
-      planejado: 40,
-      desvio: 1
-    });
-  }
-  // Ordena: mais recente primeiro
-  filtered.sort(function(a,b){ return b.date > a.date ? 1 : -1; });
-  localStorage.setItem('fortbras_upload_history', JSON.stringify(filtered));
-})();
+// ── Histórico de uploads — busca da API (PostgreSQL) ──
+localStorage.removeItem('fortbras_upload_history'); // limpa cache antigo
 
-function loadHistory(){
-  const hist=JSON.parse(localStorage.getItem('fortbras_upload_history')||'[]');
+async function loadHistory(){
   const tbody=document.getElementById('history-tbody');
   if(!tbody) return;
-  if(hist.length===0){
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Nenhum upload registrado ainda.</td></tr>';
-    return;
-  }
-  tbody.innerHTML='';
-  hist.forEach((h,idx)=>{
-    const tr=document.createElement('tr');
-    const isActive=idx===0;
-    tr.innerHTML=`<td>${hist.length-idx}</td>
-      <td style="font-weight:${isActive?'700':'400'};color:${isActive?'#0F2244':'#334155'}">${h.name}</td>
-      <td>${h.date}</td>
-      <td><span class="${isActive?'badge-ativo':'badge-historico'}">${isActive?'Ativo':'Histórico'}</span></td>
-      <td>${h.realizado!==undefined?h.realizado+'%':'-'}</td>
-      <td>${h.planejado!==undefined?h.planejado+'%':'-'}</td>
-      <td style="color:${h.desvio>=0?'#1E9E5E':'#DC2626'}">${h.desvio!==undefined?(h.desvio>=0?'+':'')+h.desvio+'%':'-'}</td>`;
-    tbody.appendChild(tr);
-  });
-  // Update active file info card
-  if(hist.length>0){
-    const latest=hist[0];
-    const fnameEl=document.getElementById('active-fname');
-    const fdateEl=document.getElementById('active-fdate');
-    const fstatusEl=document.getElementById('active-fstatus');
-    if(fnameEl) fnameEl.textContent=latest.name;
-    if(fdateEl) fdateEl.textContent='📅 '+latest.date;
-    if(fstatusEl) fstatusEl.style.display='flex';
+  try {
+    const token = _jwtToken || localStorage.getItem('fortbras_jwt');
+    if(!token){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Faça login para ver o histórico.</td></tr>'; return; }
+    const r = await fetch(API_URL+'/upload/history?limit=50', { headers:{'Authorization':'Bearer '+token} });
+    if(!r.ok){ throw new Error('status '+r.status); }
+    const rows = await r.json();
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Nenhum upload registrado ainda.</td></tr>';
+      return;
+    }
+    tbody.innerHTML='';
+    rows.forEach(function(h){
+      const isActive = h.is_active == 1;
+      const dt = new Date(h.created_at);
+      const dateStr = dt.toLocaleDateString('pt-BR')+', '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const real = Number(h.realizado)||0;
+      const plan = Number(h.planejado)||0;
+      const dev  = Number(h.desvio)||0;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${h.id}</td>
+        <td style="font-weight:${isActive?'700':'400'};color:${isActive?'#0F2244':'#334155'}">${h.filename||'-'}</td>
+        <td>${dateStr}</td>
+        <td><span class="${isActive?'badge-ativo':'badge-historico'}">${isActive?'Ativo':'Histórico'}</span></td>
+        <td>${real+'%'}</td>
+        <td>${plan+'%'}</td>
+        <td style="color:${dev>=0?'#1E9E5E':'#DC2626'}">${(dev>=0?'+':'')+dev+'%'}</td>`;
+      tbody.appendChild(tr);
+    });
+    // Atualiza card "Arquivo Ativo"
+    const active = rows.find(function(h){ return h.is_active==1; });
+    if(active){
+      const dt2 = new Date(active.created_at);
+      const ds2 = dt2.toLocaleDateString('pt-BR')+', '+dt2.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const fnameEl=document.getElementById('active-fname');
+      const fdateEl=document.getElementById('active-fdate');
+      const fstatusEl=document.getElementById('active-fstatus');
+      if(fnameEl) fnameEl.textContent=active.filename;
+      if(fdateEl) fdateEl.textContent='📅 '+ds2;
+      if(fstatusEl) fstatusEl.style.display='flex';
+    }
+  } catch(e) {
+    console.warn('loadHistory error:', e);
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px">Erro ao carregar histórico.</td></tr>';
   }
 }
 loadHistory();
 
-function saveHistory(entry){
-  const hist=JSON.parse(localStorage.getItem('fortbras_upload_history')||'[]');
-  hist.unshift(entry); // add to front
-  localStorage.setItem('fortbras_upload_history', JSON.stringify(hist));
-  loadHistory();
-}
+function saveHistory(entry){ loadHistory(); } // mantém chamadas existentes sem quebrar
 
 function handleXLSX(input){
   const file=input.files[0]; if(!file) return;
@@ -1546,7 +1513,8 @@ function processFile(file){
         _plan = _map['Planejado'] || 0;
         _desv = _real - _plan;
       }catch(ei){}
-      saveHistory({name:file.name, date:dateStr, realizado:_real, planejado:_plan, desvio:_desv});
+      // Recarrega histórico da API após 1s (dá tempo do fetch do upload terminar)
+      setTimeout(loadHistory, 1000);
       const fu=document.getElementById('footer-update');
       // footer-update hidden by design
       if(ok){ ok.textContent='✓ '+file.name+' carregado com sucesso!'; ok.style.display='block'; }
