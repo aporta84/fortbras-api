@@ -860,8 +860,8 @@ function buildAreaCard(a, i){
     :(a.r===0&&a.d===0||a.c===0&&a.d===0)?''
     :`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span>`;
   const sig=getAreaSignal(a.r,a.d);
-      if(_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
-      if(_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
+      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
+      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
   card.innerHTML=`<div class="area-title">${a.n}</div>
     <div class="area-donut"><canvas id="ac${i}" role="img" aria-label="${a.n} ${a.r}%"></canvas>
     <div class="area-center" id="acp${i}">${a.r}%</div></div>
