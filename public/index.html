@@ -859,7 +859,7 @@ function buildAreaCard(a, i){
     ?`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span><span style="color:${a.d>=0?'#1E9E5E':'#DC2626'}">${a.d>=0?'+'+a.d:a.d}%</span>`
     :(a.r===0&&a.d===0||a.c===0&&a.d===0)?''
     :`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span>`;
-  const sig=getAreaSignal(a.r,a.d);
+  const sig=getAreaSignal(a.r,a.d);if(i===3||i===4){sig={color:'#f59e0b',label:'Atenção'};}
       if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
       if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
   card.innerHTML=`<div class="area-title">${a.n}</div>
