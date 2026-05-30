@@ -2506,6 +2506,13 @@ setTimeout(function(){
         }catch(e){}
       });
       console.log('✅ Painéis de área carregados do Firebase');
+    (function applySignalOverrides(){
+      let sigs=document.querySelectorAll('.area-signal');
+      if(_apmContent) Object.keys(_apmContent).forEach(function(i){
+        if(_apmContent[i]?.signal==='amarelo') sigs[i] && (sigs[i].style.backgroundColor='#f59e0b');
+        if(_apmContent[i]?.signal==='vermelho') sigs[i] && (sigs[i].style.backgroundColor='#ef4444');
+      });
+    })();
     }).catch(function(e){ console.warn('Firebase paineis load:', e); });
   }
 }, 2500);
