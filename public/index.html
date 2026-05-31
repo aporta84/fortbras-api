@@ -828,6 +828,11 @@ table.tbl tr:hover td{background:var(--gray-light)}
 </div>
 
 <script>
+// ── Configuração da API Backend ──────────────────────────────────────────────
+const API_URL = 'https://fortbras-api.onrender.com/api';
+let _jwtToken = localStorage.getItem('fortbras_jwt') || null;
+let _currentUser = JSON.parse(localStorage.getItem('fortbras_user') || 'null');
+
 const areas=[
   {n:'Infraestrutura',r:57,c:43,d:0},
   {n:'Perfil de Acesso',r:59,c:41,d:0},
@@ -859,7 +864,9 @@ function buildAreaCard(a, i){
     ?`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span><span style="color:${a.d>=0?'#1E9E5E':'#DC2626'}">${a.d>=0?'+'+a.d:a.d}%</span>`
     :(a.r===0&&a.d===0||a.c===0&&a.d===0)?''
     :`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span>`;
-  const sig=getAreaSignal(a.r,a.d);
+  const sig=getAreaSignal(a.r,a.d);if(i===3||i===4){sig.color='#f59e0b';sig.label='Atenção';}
+      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
+      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
   card.innerHTML=`<div class="area-title">${a.n}</div>
     <div class="area-donut"><canvas id="ac${i}" role="img" aria-label="${a.n} ${a.r}%"></canvas>
     <div class="area-center" id="acp${i}">${a.r}%</div></div>
@@ -1292,7 +1299,20 @@ function applyData(wb){
         const tEl=document.querySelector(`#acp${i}`);
         if(tEl) tEl.textContent=a.r+'%';
         const sEl=document.getElementById('acs'+i);
-        if(sEl){ var _e2=(_apmContent&&_apmContent[i])||null; if(_e2&&_e2.sem){var _cv2=[_e2.sem.tempo,_e2.sem.escopo,_e2.sem.equipe];var _cc2={verde:0,amarelo:0,vermelho:0};_cv2.forEach(function(c){if(c)_cc2[c]=(_cc2[c]||0)+1;});var _cm2=Object.keys(_cc2).sort(function(a,b){return _cc2[b]-_cc2[a];})[0];if(_cm2==='amarelo'){sEl.style.background='#f59e0b';sEl.title='Atenção';}else if(_cm2==='vermelho'){sEl.style.background='#ef4444';sEl.title='Crítico';}else{sEl.style.background='#22C55E';sEl.title='No Prazo';}}else{const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;} }
+        if(sEl){
+          var _e2=(_apmContent&&_apmContent[i])||null;
+          if(_e2&&_e2.sem){
+            var _cv2=[_e2.sem.tempo,_e2.sem.escopo,_e2.sem.equipe];
+            var _cc2={verde:0,amarelo:0,vermelho:0};
+            _cv2.forEach(function(c){if(c)_cc2[c]=(_cc2[c]||0)+1;});
+            var _cm2=Object.keys(_cc2).sort(function(a,b){return _cc2[b]-_cc2[a];})[0];
+            if(_cm2==='amarelo'){sEl.style.background='#f59e0b';sEl.title='Atenção';}
+            else if(_cm2==='vermelho'){sEl.style.background='#ef4444';sEl.title='Crítico';}
+            else{sEl.style.background='#22C55E';sEl.title='No Prazo';}
+          } else {
+            const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;
+          }
+        }
       });
     }
   }
@@ -1372,10 +1392,7 @@ function updateDesvioArrow(dev){
 // ── Autenticação de usuário ──
 // Credenciais (hash simples para ofuscação no client-side)
 
-// ── Configuração da API Backend ──────────────────────────────────────────────
-const API_URL = 'https://fortbras-api.onrender.com/api'; // Altere para URL do servidor em produção
-let _jwtToken = localStorage.getItem('fortbras_jwt') || null;
-let _currentUser = JSON.parse(localStorage.getItem('fortbras_user') || 'null');
+// ── Configuração da API Backend (declarada no script anterior) ───────────────
 
 async function apiPost(path, body, auth=true){
   const headers = {'Content-Type':'application/json'};
@@ -2291,6 +2308,8 @@ function apmOpen(idx){
   if(!_apmContent[idx]) _apmContent[idx] = {
     sem:{tempo:'verde',escopo:'verde',equipe:'verde'}, av:[], pp:[], ri:[]
   };
+  // FIX v2: garantir sem mesmo se _apmContent[idx] já existia (ex: carregado do Firebase)
+  if(!_apmContent[idx].sem) _apmContent[idx].sem = {tempo:'verde',escopo:'verde',equipe:'verde'};
   var c = _apmContent[idx];
 
   // Semáforos
@@ -2496,7 +2515,10 @@ setTimeout(function(){
       Object.keys(val).forEach(function(k){
         try{
           var parsed = typeof val[k].payload==='string'?JSON.parse(val[k].payload):val[k];
-          _apmContent[parseInt(k)] = parsed;
+          // Merge preservando sem e outros campos do Firebase
+          var merged = Object.assign({}, _apmContent[parseInt(k)]||{}, parsed);
+          if(val[k].sem) merged.sem = val[k].sem;
+          _apmContent[parseInt(k)] = merged;
           // Marca card com indicador
           var cards=document.querySelectorAll('.area-card');
           var idx=parseInt(k);
@@ -2504,6 +2526,22 @@ setTimeout(function(){
         }catch(e){}
       });
       console.log('✅ Painéis de área carregados do Firebase');
+      // Atualizar bolinhas dos cards já renderizados
+      Object.keys(_apmContent||{}).forEach(function(k){
+        var i=parseInt(k);
+        var entry=_apmContent[i];
+        if(!entry||!entry.sem) return;
+        var sig=document.getElementById('acs'+i);
+        if(!sig) return;
+        var cores=[entry.sem.tempo,entry.sem.escopo,entry.sem.equipe];
+        var cnt={verde:0,amarelo:0,vermelho:0};
+        cores.forEach(function(c){if(c)cnt[c]=(cnt[c]||0)+1;});
+        var maj=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0];
+        if(maj==='amarelo'){sig.style.background='#f59e0b';sig.title='Atenção';}
+        else if(maj==='vermelho'){sig.style.background='#ef4444';sig.title='Crítico';}
+        else{sig.style.background='#22C55E';sig.title='No Prazo';}
+      });
+
     }).catch(function(e){ console.warn('Firebase paineis load:', e); });
   }
 }, 2500);
