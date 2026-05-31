@@ -2502,7 +2502,10 @@ setTimeout(function(){
       Object.keys(val).forEach(function(k){
         try{
           var parsed = typeof val[k].payload==='string'?JSON.parse(val[k].payload):val[k];
-          _apmContent[parseInt(k)] = Object.assign({}, _apmContent[parseInt(k)]||{}, parsed);
+          // Merge preservando sem e outros campos do Firebase
+          var merged = Object.assign({}, _apmContent[parseInt(k)]||{}, parsed);
+          if(val[k].sem) merged.sem = val[k].sem;
+          _apmContent[parseInt(k)] = merged;
           // Marca card com indicador
           var cards=document.querySelectorAll('.area-card');
           var idx=parseInt(k);
