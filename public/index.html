@@ -828,6 +828,11 @@ table.tbl tr:hover td{background:var(--gray-light)}
 </div>
 
 <script>
+// ── Configuração da API Backend ──────────────────────────────────────────────
+const API_URL = 'https://fortbras-api.onrender.com/api';
+let _jwtToken = localStorage.getItem('fortbras_jwt') || null;
+let _currentUser = JSON.parse(localStorage.getItem('fortbras_user') || 'null');
+
 const areas=[
   {n:'Infraestrutura',r:57,c:43,d:0},
   {n:'Perfil de Acesso',r:59,c:41,d:0},
@@ -1374,10 +1379,7 @@ function updateDesvioArrow(dev){
 // ── Autenticação de usuário ──
 // Credenciais (hash simples para ofuscação no client-side)
 
-// ── Configuração da API Backend ──────────────────────────────────────────────
-const API_URL = 'https://fortbras-api.onrender.com/api'; // Altere para URL do servidor em produção
-let _jwtToken = localStorage.getItem('fortbras_jwt') || null;
-let _currentUser = JSON.parse(localStorage.getItem('fortbras_user') || 'null');
+// ── Configuração da API Backend (declarada no script anterior) ───────────────
 
 async function apiPost(path, body, auth=true){
   const headers = {'Content-Type':'application/json'};
