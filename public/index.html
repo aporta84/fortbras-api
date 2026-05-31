@@ -877,6 +877,20 @@ function buildAreaCard(a, i){
   card.title='Clique para abrir o painel detalhado';
   (function(_i){ card.addEventListener('click', function(){ apmOpen(_i); }); })(i);
   grid.appendChild(card);
+  // Aplicar cor do semáforo se disponível
+  if(typeof _apmContent!=='undefined' && _apmContent[i]){
+    var _entry=_apmContent[i];
+    var _sig=card.querySelector('.area-signal');
+    if(_sig && _entry.sem){
+      var _cores=[_entry.sem.tempo,_entry.sem.escopo,_entry.sem.equipe];
+      var _cnt={verde:0,amarelo:0,vermelho:0};
+      _cores.forEach(function(c){if(c)_cnt[c]=(_cnt[c]||0)+1;});
+      var _maj=Object.keys(_cnt).sort(function(a,b){return _cnt[b]-_cnt[a];})[0];
+      if(_maj==='amarelo') _sig.style.backgroundColor='#f59e0b';
+      else if(_maj==='vermelho') _sig.style.backgroundColor='#ef4444';
+      else if(_maj==='verde') _sig.style.backgroundColor='#22C55E';
+    }
+  }
 }
 areas.forEach((a,i)=>{ buildAreaCard(a,i); });
 
