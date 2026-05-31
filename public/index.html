@@ -864,14 +864,29 @@ function buildAreaCard(a, i){
     ?`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span><span style="color:${a.d>=0?'#1E9E5E':'#DC2626'}">${a.d>=0?'+'+a.d:a.d}%</span>`
     :(a.r===0&&a.d===0||a.c===0&&a.d===0)?''
     :`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span>`;
-  const sig=getAreaSignal(a.r,a.d);if(i===3||i===4){sig.color='#f59e0b';sig.label='Atenção';}
-      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
-      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
+  // Calcular cor da bolinha
+  var _sigColor, _sigLabel;
+  var _apc = (typeof _apmContent!=='undefined') ? _apmContent[i] : null;
+  if(_apc && _apc.sem) {
+    // Tem semáforos definidos: usa maioria
+    var _semVals = [_apc.sem.tempo, _apc.sem.escopo, _apc.sem.equipe];
+    var _semCnt = {verde:0, amarelo:0, vermelho:0};
+    _semVals.forEach(function(c){ if(c) _semCnt[c] = (_semCnt[c]||0)+1; });
+    var _semMaj = Object.keys(_semCnt).sort(function(a,b){ return _semCnt[b]-_semCnt[a]; })[0];
+    if(_semMaj==='amarelo'){ _sigColor='#f59e0b'; _sigLabel='Atenção'; }
+    else if(_semMaj==='vermelho'){ _sigColor='#ef4444'; _sigLabel='Crítico'; }
+    else { _sigColor='#22C55E'; _sigLabel='No Prazo'; }
+  } else {
+    // Sem semáforos: calcula pelo desvio
+    var _autoSig = getAreaSignal(a.r, a.d);
+    _sigColor = _autoSig.color;
+    _sigLabel = _autoSig.label;
+  }
   card.innerHTML=`<div class="area-title">${a.n}</div>
     <div class="area-donut"><canvas id="ac${i}" role="img" aria-label="${a.n} ${a.r}%"></canvas>
     <div class="area-center" id="acp${i}">${a.r}%</div></div>
     <div class="area-pcts" id="acpcts${i}">${pcts}</div>
-    <div class="area-signal" id="acs${i}" title="${sig.label}" style="background:${sig.color}"></div>
+    <div class="area-signal" id="acs${i}" title="${_sigLabel}" style="background:${_sigColor}"></div>
     <div class="apm-card-hint">Clique para detalhar</div>`;
   card.style.cursor='pointer';
   card.title='Clique para abrir o painel detalhado';
@@ -1280,7 +1295,6 @@ function applyData(wb){
         });
         window._areaCharts.push(ch);
       });
-      if(typeof applySignalOverrides==='function') applySignalOverrides();
     } else {
       // Just update existing charts
       areaRows.forEach((a,i)=>{
@@ -2514,28 +2528,7 @@ setTimeout(function(){
         }catch(e){}
       });
       console.log('✅ Painéis de área carregados do Firebase');
-    window.applySignalOverrides=function(){
-      let sigs=document.querySelectorAll('.area-signal');
-      if(_apmContent) Object.keys(_apmContent).forEach(function(i){
-        var entry=_apmContent[i];
-        if(!entry) return;
-        var cor=null;
-        // Prioridade 1: maioria dos semáforos (sem)
-        if(entry.sem){
-          var cores=[entry.sem.tempo,entry.sem.escopo,entry.sem.equipe];
-          var cnt={verde:0,amarelo:0,vermelho:0};
-          cores.forEach(function(c){if(c) cnt[c]=(cnt[c]||0)+1;});
-          cor=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0];
-        }
-        // Prioridade 2: payload.signal
-        if(!cor && entry.payload?.signal) cor=entry.payload.signal;
-        // Aplicar cor
-        if(cor==='amarelo') sigs[i] && (sigs[i].style.backgroundColor='#f59e0b');
-        else if(cor==='vermelho') sigs[i] && (sigs[i].style.backgroundColor='#ef4444');
-        else if(cor==='verde') sigs[i] && (sigs[i].style.backgroundColor='#22C55E');
-      });
-    };
-    applySignalOverrides();
+    // Cores aplicadas diretamente no buildAreaCard
     }).catch(function(e){ console.warn('Firebase paineis load:', e); });
   }
 }, 2500);
