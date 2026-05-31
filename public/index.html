@@ -1280,6 +1280,7 @@ function applyData(wb){
         });
         window._areaCharts.push(ch);
       });
+      if(typeof applySignalOverrides==='function') applySignalOverrides();
     } else {
       // Just update existing charts
       areaRows.forEach((a,i)=>{
@@ -2513,7 +2514,6 @@ setTimeout(function(){
         }catch(e){}
       });
       console.log('✅ Painéis de área carregados do Firebase');
-      applySignalOverrides();
     window.applySignalOverrides=function(){
       let sigs=document.querySelectorAll('.area-signal');
       if(_apmContent) Object.keys(_apmContent).forEach(function(i){
