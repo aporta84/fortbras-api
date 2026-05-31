@@ -74,28 +74,4 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
-router.post('/update-password', async (req, res) => {
-  try {
-    const bcrypt = require('bcryptjs');
-    const {users, password} = req.body;
-    const hash = bcrypt.hashSync(password, 10);
-    await require('../config/database').pool.query(
-      "UPDATE users SET password=$1, active=1 WHERE username=ANY($2::text[])",
-      [hash, users]
-    );
-    res.json({ok:true, updated: users});
-  } catch(e){ res.json({error:e.message}); }
-});
-router.post('/emergency-reset', async (req, res) => {
-  try {
-    const bcrypt = require('bcryptjs');
-    const hash = bcrypt.hashSync('123456', 10);
-    await require('../config/database').pool.query(
-      "UPDATE users SET password=$1, active=1 WHERE username IN ('aporta','admin')",
-      [hash]
-    );
-    const rows = await require('../config/database').pool.query('SELECT username,active FROM users');
-    res.json({ok:true, users: rows.rows});
-  } catch(e){ res.json({error:e.message}); }
-});
 module.exports = router;
