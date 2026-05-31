@@ -864,9 +864,26 @@ function buildAreaCard(a, i){
     ?`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span><span style="color:${a.d>=0?'#1E9E5E':'#DC2626'}">${a.d>=0?'+'+a.d:a.d}%</span>`
     :(a.r===0&&a.d===0||a.c===0&&a.d===0)?''
     :`<span style="color:#1D5BBF">${a.r}%</span><span style="color:#94A3B8">${a.c}%</span>`;
-  const sig=getAreaSignal(a.r,a.d);if(i===3||i===4){sig.color='#f59e0b';sig.label='Atenção';}
-      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
-      if(typeof _apmContent!=='undefined'&&_apmContent[i]?.signal==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
+  const sig=getAreaSignal(a.r,a.d);
+      if(typeof _apmContent!=='undefined'&&_apmContent[i]){
+        // Calcular cor pela maioria dos semáforos (sem) se disponível
+        var _sem=_apmContent[i]?.sem;
+        if(_sem){
+          var _cores=[_sem.tempo,_sem.escopo,_sem.equipe];
+          var _cnt={verde:0,amarelo:0,vermelho:0};
+          _cores.forEach(function(c){if(c)_cnt[c]=(_cnt[c]||0)+1;});
+          var _maj=Object.keys(_cnt).sort(function(a,b){return _cnt[b]-_cnt[a];})[0];
+          if(_maj==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
+          else if(_maj==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
+          else if(_maj==='verde'){sig.color='#22C55E';sig.label='No Prazo';}
+        } else {
+          // Fallback: usar payload.signal
+          var _ps=_apmContent[i]?.payload?.signal;
+          if(_ps==='amarelo'){sig.color='#f59e0b';sig.label='Atenção';}
+          else if(_ps==='vermelho'){sig.color='#ef4444';sig.label='Crítico';}
+          else if(_ps==='verde'){sig.color='#22C55E';sig.label='No Prazo';}
+        }
+      }
   card.innerHTML=`<div class="area-title">${a.n}</div>
     <div class="area-donut"><canvas id="ac${i}" role="img" aria-label="${a.n} ${a.r}%"></canvas>
     <div class="area-center" id="acp${i}">${a.r}%</div></div>
