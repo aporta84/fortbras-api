@@ -2295,6 +2295,8 @@ function apmOpen(idx){
   if(!_apmContent[idx]) _apmContent[idx] = {
     sem:{tempo:'verde',escopo:'verde',equipe:'verde'}, av:[], pp:[], ri:[]
   };
+  // FIX: garantir sem mesmo se _apmContent[idx] já existia (ex: carregado do Firebase)
+  if(!_apmContent[idx].sem) _apmContent[idx].sem = {tempo:'verde',escopo:'verde',equipe:'verde'};
   var c = _apmContent[idx];
 
   // Semáforos
