@@ -1300,7 +1300,21 @@ function applyData(wb){
         const tEl=document.querySelector(`#acp${i}`);
         if(tEl) tEl.textContent=a.r+'%';
         const sEl=document.getElementById('acs'+i);
-        if(sEl){ const sg=getAreaSignal(a.r,a.d); sEl.style.background=sg.color; sEl.title=sg.label; }
+        if(sEl){
+          // Usar sem se disponível, senão calcular pelo desvio
+          var _e=(_apmContent&&_apmContent[i])||null;
+          if(_e&&_e.sem){
+            var _cv=[_e.sem.tempo,_e.sem.escopo,_e.sem.equipe];
+            var _cc={verde:0,amarelo:0,vermelho:0};
+            _cv.forEach(function(c){if(c)_cc[c]=(_cc[c]||0)+1;});
+            var _cm=Object.keys(_cc).sort(function(a,b){return _cc[b]-_cc[a];})[0];
+            if(_cm==='amarelo'){sEl.style.background='#f59e0b';sEl.title='Atenção';}
+            else if(_cm==='vermelho'){sEl.style.background='#ef4444';sEl.title='Crítico';}
+            else{sEl.style.background='#22C55E';sEl.title='No Prazo';}
+          } else {
+            const sg=getAreaSignal(a.r,a.d); sEl.style.background=sg.color; sEl.title=sg.label;
+          }
+        }
       });
     }
   }
