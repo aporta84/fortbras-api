@@ -2127,7 +2127,7 @@ function lsLoadData(){
         const pcts=a.d!=0?'<span>'+a.r+'%</span><span>'+a.c+'%</span><span style="color:'+(a.d<0?'#DC2626':'#1E9E5E')+'">'+(a.d>0?'+':'')+a.d+'%</span>':'<span>'+a.r+'%</span><span>'+a.c+'%</span>';
         if(cEl) cEl.textContent=a.r+'%';
         if(pEl) pEl.innerHTML=pcts;
-        if(sEl){const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;}
+        if(sEl){ var _e2=(_apmContent&&_apmContent[i])||null; if(_e2&&_e2.sem){var _cv2=[_e2.sem.tempo,_e2.sem.escopo,_e2.sem.equipe];var _cc2={verde:0,amarelo:0,vermelho:0};_cv2.forEach(function(c){if(c)_cc2[c]=(_cc2[c]||0)+1;});var _cm2=Object.keys(_cc2).sort(function(a,b){return _cc2[b]-_cc2[a];})[0];if(_cm2==='amarelo'){sEl.style.background='#f59e0b';sEl.title='Atenção';}else if(_cm2==='vermelho'){sEl.style.background='#ef4444';sEl.title='Crítico';}else{sEl.style.background='#22C55E';sEl.title='No Prazo';}}else{const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;} }
       });
     }
     // Avanços
@@ -2233,7 +2233,7 @@ function applyDataObj(obj){
         const pcts=a.d!=0?'<span>'+a.r+'%</span><span>'+a.c+'%</span><span style="color:'+(a.d<0?'#DC2626':'#1E9E5E')+'">'+(a.d>0?'+':'')+a.d+'%</span>':'<span>'+a.r+'%</span><span>'+a.c+'%</span>';
         if(cEl) cEl.textContent=a.r+'%';
         if(pEl) pEl.innerHTML=pcts;
-        if(sEl){const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;}
+        if(sEl){ var _e2=(_apmContent&&_apmContent[i])||null; if(_e2&&_e2.sem){var _cv2=[_e2.sem.tempo,_e2.sem.escopo,_e2.sem.equipe];var _cc2={verde:0,amarelo:0,vermelho:0};_cv2.forEach(function(c){if(c)_cc2[c]=(_cc2[c]||0)+1;});var _cm2=Object.keys(_cc2).sort(function(a,b){return _cc2[b]-_cc2[a];})[0];if(_cm2==='amarelo'){sEl.style.background='#f59e0b';sEl.title='Atenção';}else if(_cm2==='vermelho'){sEl.style.background='#ef4444';sEl.title='Crítico';}else{sEl.style.background='#22C55E';sEl.title='No Prazo';}}else{const sg=getAreaSignal(a.r,a.d);sEl.style.background=sg.color;sEl.title=sg.label;} }
       });
     }
     if(obj.avancos&&obj.avancos.length>0){
