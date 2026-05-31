@@ -1269,6 +1269,7 @@ function applyData(wb){
       window._areaCharts=[];
       if(grid) grid.innerHTML='';
       if(grid) areaRows.forEach((a,i)=>{ buildAreaCard(a,i); });
+      setTimeout(applySignalOverrides, 100);
       areaRows.forEach((a,i)=>{
         const data=a.d!=0?[a.r,a.c,Math.abs(a.d)]:[a.r,a.c];
         const colors=a.d!=0?['#1D5BBF','#94A3B8',a.d<0?'#DC2626':'#1E9E5E']:['#1D5BBF','#94A3B8'];
