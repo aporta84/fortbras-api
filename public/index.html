@@ -1280,8 +1280,6 @@ function applyData(wb){
         });
         window._areaCharts.push(ch);
       });
-      // Aplicar cores dos semáforos após rebuild completo
-      applySignalOverrides();
     } else {
       // Just update existing charts
       areaRows.forEach((a,i)=>{
@@ -2512,7 +2510,7 @@ setTimeout(function(){
         }catch(e){}
       });
       console.log('✅ Painéis de área carregados do Firebase');
-    (function applySignalOverrides(){
+    window.applySignalOverrides=function(){
       let sigs=document.querySelectorAll('.area-signal');
       if(_apmContent) Object.keys(_apmContent).forEach(function(i){
         var entry=_apmContent[i];
@@ -2532,7 +2530,8 @@ setTimeout(function(){
         else if(cor==='vermelho') sigs[i] && (sigs[i].style.backgroundColor='#ef4444');
         else if(cor==='verde') sigs[i] && (sigs[i].style.backgroundColor='#22C55E');
       });
-    })();
+    };
+    applySignalOverrides();
     }).catch(function(e){ console.warn('Firebase paineis load:', e); });
   }
 }, 2500);
