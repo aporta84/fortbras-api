@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: fortbras-api
+    runtime: node
+    region: oregon
+    branch: main
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_A6SEHeZBgk0O@ep-wild-darkness-athurobx-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: JWT_SECRET
+        value: fortbras_menil_jwt_secret_2024_xK9mP3qR
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: MAX_FILE_SIZE_MB
+        value: 10
+      - key: ALLOWED_ORIGINS
+        value: https://fortbras-mobile.onrender.com
